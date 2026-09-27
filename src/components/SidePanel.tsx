@@ -17,22 +17,25 @@ import {
   ArrowRight,
   ArrowLeft,
   ChevronRight,
-  Award,
-  Layers,
-  HelpCircle,
   TrendingUp,
   Loader2,
   Activity,
   Info,
   Split,
   Lock,
-  CheckSquare
+  CheckSquare,
+  HelpCircle,
+  Eye,
+  Cat,
+  Zap,
 } from 'lucide-react';
 
 interface SidePanelProps {
   structure: AnatomyStructure;
   evaluationResult: DrawingEvaluationResult | null;
   activeHint: HintResponse | null;
+  liveNudgeMessage: string | null;
+  onClearNudge: () => void;
   selectedErrorId: number | null;
   onSelectError: (id: number | null) => void;
   onCheckDrawing: () => void;
@@ -49,12 +52,18 @@ interface SidePanelProps {
   canCompareWithTextbook: boolean;
   onOpenCompare: () => void;
   hintLevelsUsedCount: number;
+  // Tease mode state
+  teaseMode: boolean;
+  // Coach watching status
+  isCoachWatching: boolean;
 }
 
 export const SidePanel: React.FC<SidePanelProps> = ({
   structure,
   evaluationResult,
   activeHint,
+  liveNudgeMessage,
+  onClearNudge,
   selectedErrorId,
   onSelectError,
   onCheckDrawing,
@@ -69,6 +78,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   canCompareWithTextbook,
   onOpenCompare,
   hintLevelsUsedCount,
+  teaseMode,
+  isCoachWatching,
 }) => {
   const [activeTab, setActiveTab] = useState<'feedback' | 'guide' | 'hint'>(
     evaluationResult ? 'feedback' : 'guide'
@@ -88,33 +99,33 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     currentScore !== null && previousScore !== null ? currentScore - previousScore : null;
 
   return (
-    <div className="w-80 lg:w-96 h-full bg-white border-l border-slate-200 flex flex-col shrink-0 overflow-hidden">
+    <aside className="w-80 lg:w-96 h-full bg-white border-l border-slate-200/90 flex flex-col shrink-0 overflow-hidden shadow-xs">
       {/* 3 Main AI Mode Buttons */}
-      <div className="p-3 border-b border-slate-200 bg-slate-50 shrink-0">
-        <div className="grid grid-cols-3 gap-1 p-1 bg-slate-200/80 rounded-lg">
+      <div className="p-3 border-b border-slate-200/80 bg-slate-50/60 shrink-0">
+        <div className="grid grid-cols-3 gap-1 p-1 bg-slate-200/70 rounded-xl">
           {/* Guide Me Button */}
           <button
             onClick={() => setActiveTab('guide')}
-            className={`flex flex-col items-center justify-center py-2 px-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'guide'
-                ? 'bg-white text-blue-900 shadow-xs'
+                ? 'bg-white text-teal-800 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Compass className="w-4 h-4 mb-0.5 text-blue-900" />
+            <Compass className="w-4 h-4 mb-0.5 text-teal-600" />
             <span>Guide Me</span>
           </button>
 
           {/* Hint Ladder Button */}
           <button
             onClick={() => setActiveTab('hint')}
-            className={`flex flex-col items-center justify-center py-2 px-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'hint'
-                ? 'bg-white text-blue-900 shadow-xs'
+                ? 'bg-white text-teal-800 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Lightbulb className="w-4 h-4 mb-0.5 text-blue-900" />
+            <Lightbulb className="w-4 h-4 mb-0.5 text-teal-600" />
             <span>Hint Ladder</span>
           </button>
 
@@ -126,33 +137,58 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 onCheckDrawing();
               }
             }}
-            className={`flex flex-col items-center justify-center py-2 px-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'feedback'
-                ? 'bg-white text-blue-900 shadow-xs'
+                ? 'bg-white text-teal-800 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Sparkles className="w-4 h-4 mb-0.5 text-blue-900" />
-            <span>Check Drawing</span>
+            <Sparkles className="w-4 h-4 mb-0.5 text-teal-600" />
+            <span>Grading</span>
           </button>
         </div>
       </div>
 
-      {/* Loading Overlay */}
+      {/* Live Nudge Banner (Appears dynamically while drawing) */}
+      {liveNudgeMessage && (
+        <div className="mx-3 mt-3 p-3 bg-amber-50/90 border border-amber-300 rounded-xl shadow-xs text-xs flex items-start gap-2.5 animate-in slide-in-from-top-2 duration-200">
+          <div className="p-1 bg-amber-500 text-white rounded-md shrink-0 mt-0.5">
+            <Lightbulb className="w-3.5 h-3.5" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-amber-900 text-[11px] uppercase tracking-wide">
+                Live Coach Nudge
+              </span>
+              <button
+                onClick={onClearNudge}
+                className="text-[10px] text-amber-700 hover:underline cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+            <p className="text-amber-950 font-medium mt-0.5 leading-snug">
+              {liveNudgeMessage}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Loading State */}
       {isLoading ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center mb-3">
-            <Activity className="w-6 h-6 text-blue-900 animate-pulse" />
+          <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center mb-3 shadow-xs">
+            <Activity className="w-6 h-6 text-teal-600 animate-pulse" />
           </div>
           <h3 className="text-sm font-bold text-slate-900">
-            {loadingMessage || 'Your tutor is looking at your drawing…'}
+            {loadingMessage || 'Your tutor is analyzing your diagram…'}
           </h3>
           <p className="text-xs text-slate-500 mt-1 max-w-xs">
-            Comparing against faculty rubric, relative proportions, and OpenStax reference landmarks.
+            Verifying anatomical positions, spatial boundaries, and OpenStax reference landmarks.
           </p>
-          <div className="mt-4 flex items-center gap-2 text-xs font-medium text-blue-900">
+          <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-teal-700 bg-teal-50 px-3 py-1 rounded-full">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Analyzing anatomy...</span>
+            <span>Consulting clinical faculty...</span>
           </div>
         </div>
       ) : (
@@ -162,31 +198,31 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             <div className="p-4 space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Drawing Plan</h3>
+                  <h3 className="text-sm font-extrabold text-slate-900">Drawing Plan</h3>
                   <p className="text-xs text-slate-500">
-                    Step-by-step whiteboard landmarks ({steps.length} steps)
+                    Step-by-step whiteboard coaching ({steps.length} landmarks)
                   </p>
                 </div>
-                <span className="text-xs font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                <span className="text-xs font-mono font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
                   Step {currentStepIndex + 1} of {steps.length}
                 </span>
               </div>
 
-              {/* Progress Bar of Steps */}
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+              {/* Step Progress Bar */}
+              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                 <div
-                  className="bg-blue-900 h-full transition-all duration-300"
+                  className="bg-teal-600 h-full transition-all duration-300"
                   style={{
                     width: `${((currentStepIndex + 1) / Math.max(steps.length, 1)) * 100}%`,
                   }}
                 />
               </div>
 
-              {/* Active Step Card */}
+              {/* Current Step Card */}
               {currentStep && (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 space-y-3 shadow-xs">
                   <div className="flex items-start gap-2.5">
-                    <span className="w-6 h-6 rounded-md bg-blue-900 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                    <span className="w-6 h-6 rounded-lg bg-teal-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-2xs">
                       {currentStep.stepNumber}
                     </span>
                     <div>
@@ -200,13 +236,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   </div>
 
                   {/* Landmark & Proportion tip */}
-                  <div className="p-2.5 bg-white rounded border border-slate-200 space-y-1.5 text-xs">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1.5 text-xs">
                     <div>
-                      <span className="font-semibold text-slate-900">Landmarks: </span>
+                      <span className="font-bold text-slate-900">Landmarks: </span>
                       <span className="text-slate-600">{currentStep.landmarks}</span>
                     </div>
                     <div>
-                      <span className="font-semibold text-slate-900">Proportions: </span>
+                      <span className="font-bold text-slate-900">Proportions: </span>
                       <span className="text-slate-600">{currentStep.proportionsTip}</span>
                     </div>
                   </div>
@@ -216,17 +252,17 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                     {currentStep.keyParts?.map((part, idx) => (
                       <span
                         key={idx}
-                        className="px-2 py-0.5 bg-white text-slate-700 border border-slate-200 rounded text-[11px] font-medium"
+                        className="px-2 py-0.5 bg-white text-slate-700 border border-slate-200 rounded-md text-[11px] font-medium"
                       >
                         {part}
                       </span>
                     ))}
                   </div>
 
-                  {/* Live Coach Check Step Feedback if available */}
+                  {/* Step Coach Feedback */}
                   {stepCoachFeedback && stepCoachFeedback.stepNumber === currentStep.stepNumber && (
-                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded text-xs space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-blue-900">
+                    <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-teal-900">
                         <CheckSquare className="w-3.5 h-3.5" />
                         <span>Step Coach Feedback:</span>
                       </div>
@@ -235,11 +271,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   )}
 
                   {/* Step Action Buttons */}
-                  <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-200">
+                  <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-200/80">
                     <button
                       onClick={() => setCurrentStepIndex((prev) => Math.max(prev - 1, 0))}
                       disabled={currentStepIndex === 0}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       <span>Previous</span>
@@ -248,7 +284,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                     {onCheckStep && (
                       <button
                         onClick={() => onCheckStep(currentStep.stepNumber, currentStep.instruction)}
-                        className="px-2.5 py-1 text-[11px] font-semibold text-blue-900 bg-white border border-blue-300 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                        className="px-3 py-1.5 text-[11px] font-bold text-teal-800 bg-white border border-teal-300 hover:bg-teal-50 rounded-lg transition-colors cursor-pointer shadow-2xs"
                         title="Evaluate just this step"
                       >
                         Check this step
@@ -260,7 +296,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                         setCurrentStepIndex((prev) => Math.min(prev + 1, steps.length - 1))
                       }
                       disabled={currentStepIndex === steps.length - 1}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-30 disabled:pointer-events-none rounded transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-30 disabled:pointer-events-none rounded-lg transition-colors cursor-pointer shadow-xs"
                     >
                       <span>Next step</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -276,10 +312,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                     setActiveTab('feedback');
                     onCheckDrawing();
                   }}
-                  className="w-full py-2 px-3 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-md transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                  className="w-full py-2.5 px-3 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Finished? Check My Drawing</span>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Finished? Grade My Drawing</span>
                 </button>
               </div>
             </div>
@@ -289,7 +325,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           {activeTab === 'hint' && (
             <div className="p-4 space-y-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">3-Level Socratic Hint Ladder</h3>
+                <h3 className="text-sm font-extrabold text-slate-900">3-Level Socratic Hint Ladder</h3>
                 <p className="text-xs text-slate-500">
                   Promotes cognitive recall without spoiling the answer
                 </p>
@@ -304,27 +340,27 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                       setSelectedHintLevel(lvl as 1 | 2 | 3);
                       onRequestHint(lvl as 1 | 2 | 3);
                     }}
-                    className={`p-2.5 rounded-lg border text-left flex flex-col transition-all cursor-pointer ${
+                    className={`p-2.5 rounded-xl border text-left flex flex-col transition-all cursor-pointer ${
                       selectedHintLevel === lvl
-                        ? 'border-blue-900 bg-blue-50/70 text-blue-900 ring-1 ring-blue-900'
+                        ? 'border-teal-600 bg-teal-50/80 text-teal-900 ring-2 ring-teal-600/20'
                         : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700">
                       Level {lvl}
                     </span>
-                    <span className="text-xs font-bold text-slate-900 mt-0.5">
+                    <span className="text-xs font-extrabold text-slate-900 mt-0.5">
                       {lvl === 1 ? 'Socratic' : lvl === 2 ? 'Regional' : 'Specific Fix'}
                     </span>
                   </button>
                 ))}
               </div>
 
-              {/* Hint Content Card */}
+              {/* Active Hint Content Card */}
               {activeHint ? (
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-blue-900 uppercase tracking-wide">
+                    <span className="text-xs font-extrabold text-teal-800 uppercase tracking-wide">
                       {activeHint.title || `Level ${activeHint.level} Hint`}
                     </span>
                     <span className="text-[11px] font-medium text-slate-500">
@@ -332,19 +368,19 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-800 leading-relaxed font-medium">
+                  <p className="text-xs text-slate-800 leading-relaxed font-semibold">
                     "{activeHint.hint || activeHint.message}"
                   </p>
 
                   {activeHint.concept && (
                     <div className="text-[11px] text-slate-600 pt-2 border-t border-slate-200">
-                      <span className="font-semibold text-slate-800">Concept: </span>
+                      <span className="font-bold text-slate-800">Concept: </span>
                       {activeHint.concept}
                     </div>
                   )}
 
                   {activeHint.level === 2 && activeHint.box_2d && (
-                    <div className="text-[11px] text-blue-900 bg-blue-50 p-2 rounded border border-blue-200">
+                    <div className="text-[11px] text-teal-800 bg-teal-50 p-2 rounded-lg border border-teal-200 font-medium">
                       Regional boundary highlighted on canvas.
                     </div>
                   )}
@@ -357,7 +393,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                         setSelectedHintLevel(nextLevel);
                         onRequestHint(nextLevel);
                       }}
-                      className="w-full mt-2 py-1.5 px-3 rounded text-xs font-semibold text-blue-900 bg-white border border-blue-300 hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full mt-2 py-2 px-3 rounded-xl text-xs font-bold text-teal-800 bg-white border border-teal-300 hover:bg-teal-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                     >
                       <span>Need more help? Go to Level {selectedHintLevel + 1}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -365,7 +401,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   )}
                 </div>
               ) : (
-                <div className="p-6 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200 space-y-2">
+                <div className="p-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
                   <HelpCircle className="w-6 h-6 text-slate-400 mx-auto" />
                   <p className="text-xs font-medium text-slate-600">
                     Click a level above to receive a Socratic hint tailored to your drawing.
@@ -374,15 +410,15 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               )}
 
               {/* Compare with Textbook status */}
-              <div className="p-3 bg-white border border-slate-200 rounded-lg space-y-2">
+              <div className="p-3.5 bg-white border border-slate-200 rounded-2xl space-y-2 shadow-2xs">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-800">Textbook Comparison:</span>
+                  <span className="font-bold text-slate-800">Textbook Comparison:</span>
                   {canCompareWithTextbook ? (
-                    <span className="text-emerald-700 font-bold flex items-center gap-1">
+                    <span className="text-emerald-700 font-extrabold flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5" /> Unlocked
                     </span>
                   ) : (
-                    <span className="text-slate-500 flex items-center gap-1">
+                    <span className="text-slate-500 font-medium flex items-center gap-1">
                       <Lock className="w-3.5 h-3.5" /> {hintLevelsUsedCount}/3 hints used
                     </span>
                   )}
@@ -390,14 +426,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 {canCompareWithTextbook ? (
                   <button
                     onClick={onOpenCompare}
-                    className="w-full py-1.5 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Split className="w-3.5 h-3.5" />
                     <span>Open Textbook Comparison</span>
                   </button>
                 ) : (
                   <p className="text-[11px] text-slate-500">
-                    Using all 3 hint levels or submitting your first drawing will unlock the OpenStax reference comparison.
+                    Unlock OpenStax reference comparison by using 3 hint levels or submitting your first drawing.
                   </p>
                 )}
               </div>
@@ -409,216 +445,256 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             <div className="p-4 space-y-4">
               {!evaluationResult ? (
                 <div className="space-y-4 text-center py-6">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-blue-900">
+                  <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center mx-auto text-teal-600 shadow-xs">
                     <Sparkles className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">
-                      Check Your Drawing
+                    <h3 className="text-sm font-extrabold text-slate-900">
+                      Faculty Drawing Assessment
                     </h3>
                     <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-                      Sends your memory sketch to Gemini alongside the OpenStax reference to grade against the faculty rubric.
+                      Sends your drawing to Gemini alongside the OpenStax reference figure to grade against the faculty rubric.
                     </p>
                   </div>
                   <button
                     onClick={onCheckDrawing}
-                    className="w-full py-2.5 px-4 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-md shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-2.5 px-4 text-xs font-extrabold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>Evaluate My Diagram Now</span>
+                    <span>Grade My Diagram</span>
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Notice Banner if Fallback / Credit */}
-                  {evaluationResult.notice && (
-                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded text-xs text-slate-700 flex items-start gap-2">
-                      <Info className="w-4 h-4 text-blue-900 shrink-0 mt-0.5" />
-                      <div>{evaluationResult.notice}</div>
-                    </div>
-                  )}
-
-                  {/* Score & Progress Card */}
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">
-                        Rubric Score
-                      </span>
-                      {scoreDiff !== null && (
-                        <span
-                          className={`text-xs font-bold px-2 py-0.5 rounded ${
-                            scoreDiff >= 0
-                              ? 'bg-blue-100 text-blue-900'
-                              : 'bg-slate-200 text-slate-700'
-                          }`}
-                        >
-                          {scoreDiff >= 0 ? `+${scoreDiff} vs prev` : `${scoreDiff} vs prev`}
+                  {/* UNRELATED DRAWING / PLAYFUL TEASE STATE */}
+                  {evaluationResult.is_unrelated ? (
+                    <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl shadow-sm space-y-3 animate-in zoom-in-95 duration-200">
+                      <div className="flex items-center gap-2 text-amber-800">
+                        <Cat className="w-5 h-5 text-amber-600" />
+                        <span className="text-xs font-black uppercase tracking-wider">
+                          Unrelated Subject Detected
                         </span>
+                      </div>
+
+                      <div className="p-3 bg-white rounded-xl border border-amber-200 text-slate-800 text-sm font-bold leading-snug">
+                        {teaseMode ? (
+                          <span>
+                            🫀❓ "{evaluationResult.playful_tease || "Boss… that's a very convincing drawing, but it is unfortunately not a heart."}"
+                          </span>
+                        ) : (
+                          <span className="text-xs font-medium text-slate-700">
+                            {evaluationResult.neutral_unrelated_message || "This drawing does not appear to represent cardiac anatomy. Please draw the anterior view of the heart to receive rubric feedback."}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
+                        <span>Identified as: <strong>{evaluationResult.unrelated_identified_as || 'Doodle'}</strong></span>
+                        <span className="font-bold text-rose-600">Score: 0/100</span>
+                      </div>
+
+                      <button
+                        onClick={() => onTryAgain(true)}
+                        className="w-full py-2 px-3 text-xs font-extrabold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Try Again with Heart Anatomy</span>
+                      </button>
+                    </div>
+                  ) : (
+                    /* NORMAL ANATOMY GRADING RESULT */
+                    <>
+                      {/* Notice Banner if Fallback */}
+                      {evaluationResult.notice && (
+                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 flex items-start gap-2">
+                          <Info className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                          <div>{evaluationResult.notice}</div>
+                        </div>
                       )}
-                    </div>
 
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-slate-900">
-                        {currentScore}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-400">/ 100</span>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-500 ${
-                          (currentScore ?? 0) >= 80
-                            ? 'bg-emerald-600'
-                            : (currentScore ?? 0) >= 60
-                            ? 'bg-blue-900'
-                            : 'bg-amber-600'
-                        }`}
-                        style={{ width: `${currentScore ?? 0}%` }}
-                      />
-                    </div>
-
-                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                      {evaluationResult.summary}
-                    </p>
-
-                    {/* Next Focus */}
-                    {evaluationResult.next_focus && (
-                      <div className="text-xs text-blue-900 bg-white p-2 rounded border border-blue-200 font-medium">
-                        <span className="font-bold">Next Focus: </span>
-                        {evaluationResult.next_focus}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Try Again & Compare Actions */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => onTryAgain(false)}
-                      className="py-2 px-2.5 text-xs font-bold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                      title="Refine existing drawing while preserving your previous attempt score"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
-                      <span>Refine Sketch</span>
-                    </button>
-
-                    <button
-                      onClick={onOpenCompare}
-                      className="py-2 px-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                      title="Open side-by-side OpenStax reference comparison"
-                    >
-                      <Split className="w-3.5 h-3.5" />
-                      <span>Compare Book</span>
-                    </button>
-                  </div>
-
-                  {/* Errors List */}
-                  {evaluationResult.errors && evaluationResult.errors.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                          Clinical Corrections ({evaluationResult.errors.length})
-                        </h4>
-                        <span className="text-[11px] text-slate-500">
-                          Click to highlight on canvas
-                        </span>
-                      </div>
-
-                      <div className="space-y-2">
-                        {evaluationResult.errors.map((err: EvaluatedError) => {
-                          const isSelected = selectedErrorId === err.id;
-                          const isMajor = err.severity === 'major';
-
-                          return (
-                            <div
-                              key={err.id}
-                              onClick={() => onSelectError(isSelected ? null : err.id)}
-                              className={`p-3 rounded-lg border text-xs transition-all cursor-pointer ${
-                                isSelected
-                                  ? 'border-blue-900 bg-blue-50/50 shadow-xs ring-1 ring-blue-900'
-                                  : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                      {/* Score & Progress Card */}
+                      <div className="p-4 bg-slate-50/80 border border-slate-200/90 rounded-2xl space-y-3 shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                            Rubric Score
+                          </span>
+                          {scoreDiff !== null && (
+                            <span
+                              className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                                scoreDiff >= 0
+                                  ? 'bg-emerald-100 text-emerald-900'
+                                  : 'bg-slate-200 text-slate-700'
                               }`}
                             >
-                              <div className="flex items-start gap-2">
-                                <span
-                                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${
-                                    isMajor ? 'bg-rose-600' : 'bg-amber-600'
+                              {scoreDiff >= 0 ? `+${scoreDiff} vs prev` : `${scoreDiff} vs prev`}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-black text-slate-900">
+                            {currentScore}
+                          </span>
+                          <span className="text-sm font-bold text-slate-400">/ 100</span>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${
+                              (currentScore ?? 0) >= 80
+                                ? 'bg-emerald-600'
+                                : (currentScore ?? 0) >= 60
+                                ? 'bg-teal-600'
+                                : 'bg-amber-600'
+                            }`}
+                            style={{ width: `${currentScore ?? 0}%` }}
+                          />
+                        </div>
+
+                        <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                          {evaluationResult.summary}
+                        </p>
+
+                        {/* Next Focus */}
+                        {evaluationResult.next_focus && (
+                          <div className="text-xs text-teal-900 bg-white p-2.5 rounded-xl border border-teal-200 font-medium">
+                            <span className="font-bold">Next Focus: </span>
+                            {evaluationResult.next_focus}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Try Again & Compare Actions */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => onTryAgain(false)}
+                          className="py-2 px-2.5 text-xs font-bold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          title="Refine existing drawing while preserving your previous attempt score"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Refine Sketch</span>
+                        </button>
+
+                        <button
+                          onClick={onOpenCompare}
+                          className="py-2 px-2.5 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                          title="Open side-by-side OpenStax reference comparison"
+                        >
+                          <Split className="w-3.5 h-3.5" />
+                          <span>Compare Book</span>
+                        </button>
+                      </div>
+
+                      {/* Errors List */}
+                      {evaluationResult.errors && evaluationResult.errors.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">
+                              Clinical Corrections ({evaluationResult.errors.length})
+                            </h4>
+                            <span className="text-[11px] text-slate-500">
+                              Click to highlight on canvas
+                            </span>
+                          </div>
+
+                          <div className="space-y-2">
+                            {evaluationResult.errors.map((err: EvaluatedError) => {
+                              const isSelected = selectedErrorId === err.id;
+                              const isMajor = err.severity === 'major';
+
+                              return (
+                                <div
+                                  key={err.id}
+                                  onClick={() => onSelectError(isSelected ? null : err.id)}
+                                  className={`p-3 rounded-xl border text-xs transition-all cursor-pointer ${
+                                    isSelected
+                                      ? 'border-teal-600 bg-teal-50/50 shadow-xs ring-2 ring-teal-600/20'
+                                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                   }`}
                                 >
-                                  {err.id}
-                                </span>
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span className="font-bold text-slate-900">
-                                      {err.what_is_wrong || err.explanation}
-                                    </span>
+                                  <div className="flex items-start gap-2">
                                     <span
-                                      className={`text-[10px] uppercase font-bold px-1.5 py-0.2 rounded shrink-0 ${
-                                        isMajor
-                                          ? 'bg-rose-100 text-rose-800'
-                                          : 'bg-amber-100 text-amber-800'
+                                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${
+                                        isMajor ? 'bg-rose-600' : 'bg-amber-600'
                                       }`}
                                     >
-                                      {err.severity}
+                                      {err.id}
                                     </span>
-                                  </div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center justify-between gap-1">
+                                        <span className="font-bold text-slate-900">
+                                          {err.what_is_wrong || err.explanation}
+                                        </span>
+                                        <span
+                                          className={`text-[10px] uppercase font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                                            isMajor
+                                              ? 'bg-rose-100 text-rose-800'
+                                              : 'bg-amber-100 text-amber-800'
+                                          }`}
+                                        >
+                                          {err.severity}
+                                        </span>
+                                      </div>
 
-                                  {err.why_it_matters && (
-                                    <p className="text-slate-600 mt-1">
-                                      <span className="font-semibold text-slate-700">Why it matters: </span>
-                                      {err.why_it_matters}
-                                    </p>
-                                  )}
+                                      {err.why_it_matters && (
+                                        <p className="text-slate-600 mt-1">
+                                          <span className="font-semibold text-slate-700">Why it matters: </span>
+                                          {err.why_it_matters}
+                                        </p>
+                                      )}
 
-                                  <div className="mt-1.5 pt-1.5 border-t border-slate-100 text-blue-900 font-medium">
-                                    <span className="font-semibold">Fix: </span>
-                                    {err.how_to_fix || err.fix}
+                                      <div className="mt-1.5 pt-1.5 border-t border-slate-100 text-teal-800 font-semibold">
+                                        <span>Fix: </span>
+                                        {err.how_to_fix || err.fix}
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
 
-                  {/* Correct Structures */}
-                  {evaluationResult.correctItems && evaluationResult.correctItems.length > 0 && (
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
-                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Accurate Landmarks</span>
-                      </h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {evaluationResult.correctItems.map((c, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 bg-white text-emerald-800 border border-emerald-200 rounded text-[11px] font-medium"
-                          >
-                            ✓ {c.item || c.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                      {/* Correct Structures */}
+                      {evaluationResult.correctItems && evaluationResult.correctItems.length > 0 && (
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                          <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Accurate Landmarks</span>
+                          </h4>
+                          <div className="flex flex-wrap gap-1.5">
+                            {evaluationResult.correctItems.map((c, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-0.5 bg-white text-emerald-800 border border-emerald-200 rounded-md text-[11px] font-medium"
+                              >
+                                ✓ {c.item || c.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-                  {/* Re-check drawing button */}
-                  <div className="pt-2">
-                    <button
-                      onClick={onCheckDrawing}
-                      className="w-full py-2 px-3 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Re-Evaluate Drawing</span>
-                    </button>
-                  </div>
+                      {/* Re-check drawing button */}
+                      <div className="pt-2">
+                        <button
+                          onClick={onCheckDrawing}
+                          className="w-full py-2.5 px-3 text-xs font-extrabold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Re-Evaluate Drawing</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
           )}
         </div>
       )}
-    </div>
+    </aside>
   );
 };

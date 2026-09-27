@@ -1,5 +1,21 @@
 export type DifficultyLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 
+export type ToolType =
+  | 'pen'
+  | 'eraser'
+  | 'line'
+  | 'arrow'
+  | 'rectangle'
+  | 'circle'
+  | 'curve'
+  | 'text';
+
+export interface Point {
+  x: number;
+  y: number;
+  pressure?: number;
+}
+
 export interface ReferenceItem {
   structure: string;
   image_file: string;
@@ -22,6 +38,14 @@ export interface LiveCoachResponse {
   step_complete: boolean;
   feedback: string;
   box_2d?: [number, number, number, number] | null;
+}
+
+export interface LiveInspectionResult {
+  status: 'on_track' | 'nudge' | 'urgent_intervention';
+  message: string;
+  identified_as?: string;
+  box_2d?: [number, number, number, number] | null;
+  confidence?: number;
 }
 
 export interface DrawingStep {
@@ -99,6 +123,11 @@ export interface DrawingEvaluationResult {
   evaluatedAt: string;
   notice?: string;
   usingFallback?: boolean;
+  // Unrelated drawings and playful tease support
+  is_unrelated?: boolean;
+  unrelated_identified_as?: string;
+  playful_tease?: string;
+  neutral_unrelated_message?: string;
 }
 
 export interface HintResponse {

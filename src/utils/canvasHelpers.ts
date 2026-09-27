@@ -1,18 +1,12 @@
 /**
- * Utility helpers for Anatomy Tutor Canvas
+ * Anatomy Tutor Canvas & Geometric Drawing Helpers
+ * Supports precision tools, shape previews, and realistic demonstration sketches.
  */
 
 export interface Point {
   x: number;
   y: number;
   pressure?: number;
-}
-
-export interface Stroke {
-  points: Point[];
-  color: string;
-  width: number;
-  isEraser: boolean;
 }
 
 // Convert Gemini box_2d [ymin, xmin, ymax, xmax] (0-1000) to actual canvas pixel coordinates
@@ -30,228 +24,349 @@ export function convertBoxToPixels(
   return { top, left, width, height };
 }
 
-// Draw a sample starter sketch for immediate testing/demo
+// Draw shape preview or commit to canvas
+export function drawShape(
+  ctx: CanvasRenderingContext2D,
+  tool: 'line' | 'arrow' | 'rectangle' | 'circle' | 'curve',
+  start: Point,
+  end: Point,
+  color: string,
+  width: number,
+  controlPoint?: Point
+) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (tool === 'line') {
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+  } else if (tool === 'arrow') {
+    // Draw leader line with arrow head
+    const headLength = Math.max(12, width * 3.5);
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+
+    // Arrowhead
+    ctx.beginPath();
+    ctx.moveTo(end.x, end.y);
+    ctx.lineTo(
+      end.x - headLength * Math.cos(angle - Math.PI / 6),
+      end.y - headLength * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.lineTo(
+      end.x - headLength * Math.cos(angle + Math.PI / 6),
+      end.y - headLength * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.closePath();
+    ctx.fill();
+  } else if (tool === 'rectangle') {
+    const x = Math.min(start.x, end.x);
+    const y = Math.min(start.y, end.y);
+    const w = Math.abs(end.x - start.x);
+    const h = Math.abs(end.y - start.y);
+
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.stroke();
+  } else if (tool === 'circle') {
+    const rx = Math.abs(end.x - start.x) / 2;
+    const ry = Math.abs(end.y - start.y) / 2;
+    const cx = Math.min(start.x, end.x) + rx;
+    const cy = Math.min(start.y, end.y) + ry;
+
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (tool === 'curve') {
+    const ctrl = controlPoint || {
+      x: (start.x + end.x) / 2 - (end.y - start.y) * 0.25,
+      y: (start.y + end.y) / 2 + (end.x - start.x) * 0.25,
+    };
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.quadraticCurveTo(ctrl.x, ctrl.y, end.x, end.y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Demo Drawings:
+ * 1. Mostly correct heart with mistakes (transposed vessels, atria small)
+ * 2. Unlabeled heart
+ * 3. A cat (for testing urgent intervention & playful tease mode)
+ */
+
+export function drawSampleHeartWithMistakes(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Ventricles Body (tilted pear)
+  ctx.strokeStyle = '#1E293B';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.38, height * 0.32);
+  ctx.bezierCurveTo(width * 0.22, height * 0.42, width * 0.24, height * 0.72, width * 0.48, height * 0.86); // apex
+  ctx.bezierCurveTo(width * 0.68, height * 0.74, width * 0.78, height * 0.54, width * 0.68, height * 0.36);
+  ctx.bezierCurveTo(width * 0.58, height * 0.28, width * 0.46, height * 0.28, width * 0.38, height * 0.32);
+  ctx.stroke();
+
+  // Interventricular groove (sulcus)
+  ctx.beginPath();
+  ctx.moveTo(width * 0.46, height * 0.46);
+  ctx.quadraticCurveTo(width * 0.48, height * 0.66, width * 0.47, height * 0.85);
+  ctx.stroke();
+
+  // Too-small Atria (Subtle mistake 1)
+  ctx.strokeStyle = '#1E293B';
+  ctx.lineWidth = 3;
+  // Right atrium (drawn intentionally small)
+  ctx.beginPath();
+  ctx.arc(width * 0.31, height * 0.36, width * 0.045, 0.5 * Math.PI, 1.8 * Math.PI);
+  ctx.stroke();
+
+  // Transposed Great Vessels (Mistake 2: Aorta drawn anterior to pulmonary trunk)
+  ctx.strokeStyle = '#DC2626'; // Aorta
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.46, height * 0.44);
+  ctx.lineTo(width * 0.48, height * 0.2);
+  ctx.bezierCurveTo(width * 0.5, height * 0.12, width * 0.66, height * 0.12, width * 0.68, height * 0.22);
+  ctx.stroke();
+
+  // 3 Aortic branches
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.52, height * 0.14);
+  ctx.lineTo(width * 0.5, height * 0.08);
+  ctx.moveTo(width * 0.57, height * 0.13);
+  ctx.lineTo(width * 0.57, height * 0.07);
+  ctx.moveTo(width * 0.62, height * 0.14);
+  ctx.lineTo(width * 0.64, height * 0.08);
+  ctx.stroke();
+
+  // Blue Pulmonary trunk tucked behind (transposed)
+  ctx.strokeStyle = '#2563EB';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.42, height * 0.38);
+  ctx.lineTo(width * 0.38, height * 0.22);
+  ctx.stroke();
+
+  // SVC
+  ctx.beginPath();
+  ctx.moveTo(width * 0.3, height * 0.16);
+  ctx.lineTo(width * 0.3, height * 0.32);
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#1E293B';
+  ctx.font = 'bold 12px system-ui, sans-serif';
+  ctx.fillText('Right Ventricle', width * 0.26, height * 0.64);
+  ctx.fillText('Left Ventricle', width * 0.54, height * 0.64);
+  ctx.fillText('Apex', width * 0.51, height * 0.88);
+  ctx.fillText('Aortic Arch', width * 0.7, height * 0.16);
+  ctx.fillText('SVC', width * 0.24, height * 0.18);
+
+  ctx.restore();
+}
+
+export function drawSampleUnlabeledHeart(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Heart contour
+  ctx.strokeStyle = '#1E293B';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.36, height * 0.32);
+  ctx.bezierCurveTo(width * 0.2, height * 0.44, width * 0.22, height * 0.74, width * 0.47, height * 0.86);
+  ctx.bezierCurveTo(width * 0.68, height * 0.74, width * 0.78, height * 0.54, width * 0.68, height * 0.36);
+  ctx.bezierCurveTo(width * 0.58, height * 0.28, width * 0.46, height * 0.28, width * 0.36, height * 0.32);
+  ctx.stroke();
+
+  // Sulcus
+  ctx.beginPath();
+  ctx.moveTo(width * 0.44, height * 0.46);
+  ctx.quadraticCurveTo(width * 0.47, height * 0.66, width * 0.46, height * 0.85);
+  ctx.stroke();
+
+  // Full Right Atrium
+  ctx.beginPath();
+  ctx.bezierCurveTo(width * 0.28, height * 0.3, width * 0.22, height * 0.36, width * 0.24, height * 0.48);
+  ctx.stroke();
+
+  // Aorta
+  ctx.strokeStyle = '#DC2626';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.48, height * 0.4);
+  ctx.lineTo(width * 0.5, height * 0.2);
+  ctx.bezierCurveTo(width * 0.52, height * 0.12, width * 0.68, height * 0.12, width * 0.7, height * 0.22);
+  ctx.stroke();
+
+  // Arch branches
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.54, height * 0.14);
+  ctx.lineTo(width * 0.52, height * 0.08);
+  ctx.moveTo(width * 0.59, height * 0.13);
+  ctx.lineTo(width * 0.59, height * 0.07);
+  ctx.moveTo(width * 0.64, height * 0.14);
+  ctx.lineTo(width * 0.66, height * 0.08);
+  ctx.stroke();
+
+  // Pulmonary trunk anterior crossing
+  ctx.strokeStyle = '#2563EB';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.4, height * 0.44);
+  ctx.bezierCurveTo(width * 0.42, height * 0.3, width * 0.46, height * 0.24, width * 0.48, height * 0.18);
+  ctx.stroke();
+
+  // SVC
+  ctx.beginPath();
+  ctx.moveTo(width * 0.3, height * 0.14);
+  ctx.lineTo(width * 0.3, height * 0.3);
+  ctx.stroke();
+
+  // NOTE: Intentionally zero text labels!
+  ctx.restore();
+}
+
+export function drawSampleCat(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#1E293B';
+  ctx.lineWidth = 4;
+
+  const cx = width * 0.5;
+  const cy = height * 0.42;
+  const headR = Math.min(width, height) * 0.18;
+
+  // Cat Head
+  ctx.beginPath();
+  ctx.arc(cx, cy, headR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Left Pointy Ear
+  ctx.beginPath();
+  ctx.moveTo(cx - headR * 0.8, cy - headR * 0.5);
+  ctx.lineTo(cx - headR * 0.9, cy - headR * 1.3);
+  ctx.lineTo(cx - headR * 0.2, cy - headR * 0.9);
+  ctx.stroke();
+
+  // Right Pointy Ear
+  ctx.beginPath();
+  ctx.moveTo(cx + headR * 0.2, cy - headR * 0.9);
+  ctx.lineTo(cx + headR * 0.9, cy - headR * 1.3);
+  ctx.lineTo(cx + headR * 0.8, cy - headR * 0.5);
+  ctx.stroke();
+
+  // Eyes
+  ctx.fillStyle = '#1E293B';
+  ctx.beginPath();
+  ctx.ellipse(cx - headR * 0.4, cy - headR * 0.15, headR * 0.12, headR * 0.18, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + headR * 0.4, cy - headR * 0.15, headR * 0.12, headR * 0.18, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Little Triangle Nose
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + headR * 0.1);
+  ctx.lineTo(cx - headR * 0.12, cy + headR * 0.2);
+  ctx.lineTo(cx + headR * 0.12, cy + headR * 0.2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Mouth (W shape)
+  ctx.beginPath();
+  ctx.arc(cx - headR * 0.15, cy + headR * 0.32, headR * 0.15, 0.1 * Math.PI, 0.9 * Math.PI);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx + headR * 0.15, cy + headR * 0.32, headR * 0.15, 0.1 * Math.PI, 0.9 * Math.PI);
+  ctx.stroke();
+
+  // Whiskers Left
+  ctx.beginPath();
+  ctx.moveTo(cx - headR * 0.4, cy + headR * 0.15);
+  ctx.lineTo(cx - headR * 1.3, cy + headR * 0.05);
+  ctx.moveTo(cx - headR * 0.4, cy + headR * 0.25);
+  ctx.lineTo(cx - headR * 1.3, cy + headR * 0.25);
+  ctx.moveTo(cx - headR * 0.4, cy + headR * 0.35);
+  ctx.lineTo(cx - headR * 1.25, cy + headR * 0.45);
+  ctx.stroke();
+
+  // Whiskers Right
+  ctx.beginPath();
+  ctx.moveTo(cx + headR * 0.4, cy + headR * 0.15);
+  ctx.lineTo(cx + headR * 1.3, cy + headR * 0.05);
+  ctx.moveTo(cx + headR * 0.4, cy + headR * 0.25);
+  ctx.lineTo(cx + headR * 1.3, cy + headR * 0.25);
+  ctx.moveTo(cx + headR * 0.4, cy + headR * 0.35);
+  ctx.lineTo(cx + headR * 1.25, cy + headR * 0.45);
+  ctx.stroke();
+
+  // Body
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + headR * 1.8, headR * 0.9, headR * 1.1, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Curved Tail
+  ctx.beginPath();
+  ctx.moveTo(cx + headR * 0.8, cy + headR * 2.2);
+  ctx.bezierCurveTo(
+    cx + headR * 1.6, cy + headR * 2.2,
+    cx + headR * 1.8, cy + headR * 1.2,
+    cx + headR * 1.4, cy + headR * 0.9
+  );
+  ctx.stroke();
+
+  // Front Paws
+  ctx.beginPath();
+  ctx.ellipse(cx - headR * 0.35, cy + headR * 2.8, headR * 0.18, headR * 0.12, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + headR * 0.35, cy + headR * 2.8, headR * 0.18, headR * 0.12, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Text label: "Mittens :3"
+  ctx.fillStyle = '#64748B';
+  ctx.font = 'italic 14px system-ui, sans-serif';
+  ctx.fillText('Mittens (=^･ω･^=)', cx - 55, cy + headR * 3.3);
+
+  ctx.restore();
+}
+
+// Fallback legacy call
 export function drawSampleAnatomySketch(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
   structureId: string
 ) {
-  ctx.save();
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  if (structureId === 'heart-anterior') {
-    // Charcoal body
-    ctx.strokeStyle = '#1E293B';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    // Rough heart contour with tilted apex
-    ctx.moveTo(width * 0.35, height * 0.3);
-    ctx.bezierCurveTo(width * 0.2, height * 0.4, width * 0.22, height * 0.7, width * 0.45, height * 0.85); // apex
-    ctx.bezierCurveTo(width * 0.65, height * 0.75, width * 0.8, height * 0.55, width * 0.7, height * 0.35);
-    ctx.bezierCurveTo(width * 0.6, height * 0.25, width * 0.45, height * 0.25, width * 0.35, height * 0.3);
-    ctx.stroke();
-
-    // Interventricular groove
-    ctx.beginPath();
-    ctx.moveTo(width * 0.45, height * 0.45);
-    ctx.quadraticCurveTo(width * 0.48, height * 0.65, width * 0.45, height * 0.85);
-    ctx.stroke();
-
-    // Red Aorta
-    ctx.strokeStyle = '#DC2626';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(width * 0.48, height * 0.4);
-    ctx.lineTo(width * 0.5, height * 0.2);
-    ctx.bezierCurveTo(width * 0.52, height * 0.12, width * 0.68, height * 0.12, width * 0.7, height * 0.22);
-    ctx.stroke();
-
-    // Aortic branches
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(width * 0.54, height * 0.15);
-    ctx.lineTo(width * 0.52, height * 0.08);
-    ctx.moveTo(width * 0.59, height * 0.13);
-    ctx.lineTo(width * 0.59, height * 0.07);
-    ctx.moveTo(width * 0.64, height * 0.14);
-    ctx.lineTo(width * 0.66, height * 0.08);
-    ctx.stroke();
-
-    // Blue Pulmonary trunk & SVC
-    ctx.strokeStyle = '#2563EB';
-    ctx.lineWidth = 5;
-    // Pulmonary trunk crossing anteriorly
-    ctx.beginPath();
-    ctx.moveTo(width * 0.4, height * 0.42);
-    ctx.bezierCurveTo(width * 0.42, height * 0.3, width * 0.46, height * 0.24, width * 0.48, height * 0.18);
-    ctx.stroke();
-    // SVC
-    ctx.beginPath();
-    ctx.moveTo(width * 0.32, height * 0.12);
-    ctx.lineTo(width * 0.32, height * 0.28);
-    ctx.stroke();
-
-    // Text labels
-    ctx.fillStyle = '#1E293B';
-    ctx.font = 'bold 13px system-ui, sans-serif';
-    ctx.fillText('Right Atrium', width * 0.12, height * 0.42);
-    ctx.fillText('Right Ventricle', width * 0.25, height * 0.65);
-    ctx.fillText('Left Ventricle', width * 0.55, height * 0.65);
-    ctx.fillText('Apex', width * 0.42, height * 0.92);
-    ctx.fillStyle = '#DC2626';
-    ctx.fillText('Aortic Arch', width * 0.72, height * 0.18);
-    ctx.fillStyle = '#2563EB';
-    ctx.fillText('Pulmonary Trunk', width * 0.15, height * 0.22);
-    ctx.fillText('SVC', width * 0.24, height * 0.12);
-  } else if (structureId === 'nephron') {
-    // Nephron demo
-    ctx.strokeStyle = '#94A3B8';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.moveTo(width * 0.05, height * 0.45);
-    ctx.lineTo(width * 0.95, height * 0.45);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = '#64748B';
-    ctx.font = '11px system-ui';
-    ctx.fillText('CORTEX', width * 0.08, height * 0.42);
-    ctx.fillText('MEDULLA', width * 0.08, height * 0.49);
-
-    // Bowman's capsule & Glomerulus
-    ctx.strokeStyle = '#1E293B';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(width * 0.25, height * 0.25, 30, 0.2 * Math.PI, 1.8 * Math.PI);
-    ctx.stroke();
-
-    // Red glomerulus knot
-    ctx.strokeStyle = '#DC2626';
-    ctx.beginPath();
-    ctx.arc(width * 0.25, height * 0.25, 16, 0, 2 * Math.PI);
-    ctx.stroke();
-
-    // PCT
-    ctx.strokeStyle = '#1E293B';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(width * 0.28, height * 0.25);
-    ctx.bezierCurveTo(width * 0.35, height * 0.15, width * 0.32, height * 0.38, width * 0.4, height * 0.3);
-    ctx.bezierCurveTo(width * 0.45, height * 0.22, width * 0.42, height * 0.42, width * 0.48, height * 0.45);
-    // Loop of Henle descending
-    ctx.lineTo(width * 0.48, height * 0.82);
-    ctx.bezierCurveTo(width * 0.48, height * 0.88, width * 0.58, height * 0.88, width * 0.58, height * 0.82);
-    // Ascending limb
-    ctx.lineTo(width * 0.58, height * 0.45);
-    ctx.stroke();
-
-    // Thick ascending & DCT
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(width * 0.58, height * 0.45);
-    ctx.lineTo(width * 0.58, height * 0.35);
-    ctx.bezierCurveTo(width * 0.62, height * 0.2, width * 0.72, height * 0.35, width * 0.78, height * 0.28);
-    ctx.stroke();
-
-    // Collecting duct
-    ctx.strokeStyle = '#2563EB';
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.moveTo(width * 0.85, height * 0.12);
-    ctx.lineTo(width * 0.85, height * 0.9);
-    ctx.stroke();
-
-    ctx.fillStyle = '#1E293B';
-    ctx.font = 'bold 12px system-ui';
-    ctx.fillText('Glomerulus & Capsule', width * 0.12, height * 0.18);
-    ctx.fillText('PCT', width * 0.34, height * 0.12);
-    ctx.fillText('Loop of Henle', width * 0.46, height * 0.92);
-    ctx.fillText('DCT', width * 0.68, height * 0.18);
-    ctx.fillStyle = '#2563EB';
-    ctx.fillText('Collecting Duct', width * 0.78, height * 0.94);
-  } else if (structureId === 'neuron') {
-    // Neuron demo
-    ctx.strokeStyle = '#1E293B';
-    ctx.lineWidth = 3;
-    // Soma
-    ctx.beginPath();
-    ctx.arc(width * 0.22, height * 0.5, 36, 0, 2 * Math.PI);
-    ctx.stroke();
-    // Nucleus
-    ctx.beginPath();
-    ctx.arc(width * 0.22, height * 0.5, 12, 0, 2 * Math.PI);
-    ctx.fillStyle = '#E2E8F0';
-    ctx.fill();
-    ctx.stroke();
-
-    // Dendrites
-    const dendriteAngles = [-2.2, -1.6, -1.0, 1.2, 1.8, 2.4];
-    dendriteAngles.forEach((ang) => {
-      const sx = width * 0.22 + Math.cos(ang) * 36;
-      const sy = height * 0.5 + Math.sin(ang) * 36;
-      const ex = width * 0.22 + Math.cos(ang) * 90;
-      const ey = height * 0.5 + Math.sin(ang) * 90;
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(ex, ey);
-      ctx.stroke();
-    });
-
-    // Axon hillock & shaft
-    ctx.beginPath();
-    ctx.moveTo(width * 0.22 + 36, height * 0.47);
-    ctx.lineTo(width * 0.34, height * 0.5);
-    ctx.lineTo(width * 0.82, height * 0.5);
-    ctx.stroke();
-
-    // Myelin sheaths
-    ctx.fillStyle = '#38BDF8';
-    ctx.strokeStyle = '#0284C7';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 4; i++) {
-      const mx = width * 0.38 + i * (width * 0.1);
-      ctx.beginPath();
-      ctx.roundRect(mx, height * 0.44, width * 0.075, height * 0.12, 8);
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    // Telodendria
-    ctx.strokeStyle = '#1E293B';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(width * 0.82, height * 0.5);
-    ctx.lineTo(width * 0.9, height * 0.35);
-    ctx.moveTo(width * 0.82, height * 0.5);
-    ctx.lineTo(width * 0.92, height * 0.5);
-    ctx.moveTo(width * 0.82, height * 0.5);
-    ctx.lineTo(width * 0.9, height * 0.65);
-    ctx.stroke();
-
-    ctx.fillStyle = '#1E293B';
-    ctx.font = 'bold 12px system-ui';
-    ctx.fillText('Soma (Cell Body)', width * 0.12, height * 0.36);
-    ctx.fillText('Dendrites', width * 0.05, height * 0.5);
-    ctx.fillText('Axon Hillock', width * 0.28, height * 0.42);
-    ctx.fillStyle = '#0284C7';
-    ctx.fillText('Myelin Sheath', width * 0.46, height * 0.38);
-    ctx.fillText('Node of Ranvier', width * 0.53, height * 0.64);
-    ctx.fillStyle = '#1E293B';
-    ctx.fillText('Axon Terminals', width * 0.82, height * 0.72);
-  } else {
-    // Generic clinical schematic outline
-    ctx.strokeStyle = '#1E293B';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.ellipse(width * 0.5, height * 0.5, width * 0.25, height * 0.25, 0, 0, 2 * Math.PI);
-    ctx.stroke();
-    ctx.fillStyle = '#0D9488';
-    ctx.font = 'bold 16px system-ui';
-    ctx.fillText('Sketch your diagram here', width * 0.35, height * 0.5);
-  }
-
-  ctx.restore();
+  drawSampleHeartWithMistakes(ctx, width, height);
 }

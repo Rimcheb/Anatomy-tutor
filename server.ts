@@ -8,6 +8,8 @@ import { GoogleGenAI } from '@google/genai';
 import {
   GRADING_SYSTEM_INSTRUCTION,
   GRADING_RESPONSE_SCHEMA,
+  LIVE_INSPECTION_SYSTEM_INSTRUCTION,
+  LIVE_INSPECTION_RESPONSE_SCHEMA,
   HINTS_SYSTEM_INSTRUCTION,
   HINTS_RESPONSE_SCHEMA,
   GUIDANCE_SYSTEM_INSTRUCTION,
@@ -69,11 +71,46 @@ function getReferenceImagePart(structureId: string): { inlineData: { mimeType: s
 }
 
 // Fallback generator for realistic anatomical evaluation when Gemini encounters spikes or credit limits
-function generateRubricEvaluation(structureId: string, rubric: any, noticeReason?: string) {
+function generateRubricEvaluation(structureId: string, rubric: any, noticeReason?: string, isCatSketch?: boolean) {
+  if (isCatSketch) {
+    return {
+      structureId,
+      overallScore: 0,
+      score: 0,
+      is_unrelated: true,
+      unrelated_identified_as: 'cat',
+      playful_tease: "Boss… that's a very convincing cat, but it is unfortunately not a heart.",
+      neutral_unrelated_message: "This drawing does not appear to represent cardiac anatomy. Please draw the anterior view of the heart to receive faculty rubric feedback.",
+      summary: "Boss… that's a very convincing cat, but it is unfortunately not a heart.",
+      correct: [],
+      correctItems: [],
+      errors: [
+        {
+          id: 1,
+          type: 'incorrect',
+          severity: 'major',
+          what_is_wrong: 'Subject is a feline with whiskers and pointy ears, rather than human cardiovascular anatomy.',
+          why_it_matters: 'Medical exams test cardiac chambers, outflow tracts, and valves, not adorable domestic animals.',
+          how_to_fix: 'Clear canvas and start by sketching an inverted pear silhouette for the ventricles.',
+          explanation: 'Subject is a cat rather than a heart diagram.',
+          fix: 'Begin with the tilted cardiac apex and outflow tracts.',
+          box_2d: [150, 200, 850, 800],
+        }
+      ],
+      missingStructures: [],
+      labelMistakes: [],
+      next_focus: 'Clear and start with the cardiac silhouette and base.',
+      evaluatedAt: new Date().toISOString(),
+      notice: noticeReason,
+      usingFallback: true,
+    };
+  }
+
   return {
     structureId,
     overallScore: 74,
     score: 74,
+    is_unrelated: false,
     summary: 'Good anatomical recognition. The cardiac silhouette and ventricular contours are well positioned with the apex tilted inferolaterally. The major area for correction is the anterior-posterior depth relationship of the great arteries and labeling.',
     correct: [
       {
@@ -275,9 +312,80 @@ async function startServer() {
     }
   });
 
+  // API: Live Inspection (Periodically inspects unfinished drawing while student sketches)
+  app.post('/api/tutor/live-inspect', async (req, res) => {
+    const { imageBase64, structureId, demoType } = req.body;
+    if (!imageBase64) {
+      return res.json({ status: 'on_track', message: 'Canvas ready for drawing' });
+    }
+
+    // Check for demo overrides
+    if (demoType === 'cat') {
+      return res.json({
+        status: 'urgent_intervention',
+        identified_as: 'cat',
+        confidence: 0.96,
+        message: "Hold on — this doesn't look like a heart.",
+        box_2d: [150, 200, 850, 800]
+      });
+    }
+
+    if (demoType === 'heart-mistakes') {
+      return res.json({
+        status: 'nudge',
+        message: '💡 Your atria look a little too small compared to the ventricles.',
+        box_2d: [260, 240, 440, 380],
+        confidence: 0.88
+      });
+    }
+
+    if (demoType === 'heart-unlabeled') {
+      return res.json({
+        status: 'nudge',
+        message: "💡 Outline looks solid! Don't forget to add labels to the great vessels.",
+        box_2d: [100, 250, 350, 700],
+        confidence: 0.90
+      });
+    }
+
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+    if (apiKey) {
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+        const promptText = LIVE_INSPECTION_SYSTEM_INSTRUCTION
+          .replace('⟦STRUCTURE⟧', 'Heart – anterior view');
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: [
+            { inlineData: { mimeType: 'image/png', data: cleanBase64 } },
+            promptText
+          ],
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: LIVE_INSPECTION_RESPONSE_SCHEMA,
+            temperature: 0.1,
+          },
+        });
+
+        const parsed = JSON.parse(response.text || '{}');
+        return res.json(parsed);
+      } catch (err: any) {
+        console.warn('Live inspection failed, falling back to on_track:', err.message || err);
+      }
+    }
+
+    // Fallback: stay on track without interrupting
+    res.json({
+      status: 'on_track',
+      message: 'Drawing in progress. Continue developing key structures.'
+    });
+  });
+
   // API: Check My Drawing (sends Image 1 reference + Image 2 student drawing to Gemini)
   app.post('/api/tutor/check', async (req, res) => {
-    const { imageBase64, structureId } = req.body;
+    const { imageBase64, structureId, demoType } = req.body;
     if (!imageBase64) {
       return res.status(400).json({ error: 'Canvas image data is required' });
     }
@@ -285,6 +393,12 @@ async function startServer() {
     const targetStructureId = structureId || 'heart-anterior';
     const rubric = getRubric(targetStructureId);
     const cleanStudentBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+    // Handle demo cat immediately
+    if (demoType === 'cat') {
+      const catFallback = generateRubricEvaluation(targetStructureId, rubric, undefined, true);
+      return res.json(catFallback);
+    }
 
     // Try Gemini with 2 images
     if (apiKey) {

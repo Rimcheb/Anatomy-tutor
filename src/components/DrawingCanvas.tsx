@@ -3,42 +3,44 @@ import {
   AnatomyStructure,
   DrawingEvaluationResult,
   HintResponse,
+  ToolType,
+  Point,
 } from '../types/tutor';
-import { convertBoxToPixels } from '../utils/canvasHelpers';
-import {
-  Pen,
-  Eraser,
-  Undo2,
-  Redo2,
-  Trash2,
-  Eye,
-  EyeOff,
-  Layers,
-  Split,
-  Lock
-} from 'lucide-react';
+import { convertBoxToPixels, drawShape } from '../utils/canvasHelpers';
+import { Eye, EyeOff, Sparkles, AlertCircle } from 'lucide-react';
+import { UrgentInterventionBanner } from './UrgentInterventionBanner';
 
 interface DrawingCanvasProps {
   structure: AnatomyStructure;
   evaluationResult: DrawingEvaluationResult | null;
   activeHint: HintResponse | null;
+  liveNudgeBox: [number, number, number, number] | null;
   selectedErrorId: number | null;
   onSelectError: (id: number | null) => void;
   onCanvasChange?: () => void;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   strokesHistoryRef: React.MutableRefObject<ImageData[]>;
   redoHistoryRef: React.MutableRefObject<ImageData[]>;
-  // Reference comparison and overlay props
   isOverlayActive: boolean;
-  onToggleOverlay: (active: boolean) => void;
-  canCompareWithTextbook: boolean;
-  onOpenCompare: () => void;
+  // Current active tool states
+  currentTool: ToolType;
+  currentColor: string;
+  currentWidth: number;
+  // Urgent Intervention
+  isUrgentInterventionOpen: boolean;
+  urgentIdentifiedAs?: string;
+  onClearAndRestart: () => void;
+  onShowHowToStart: () => void;
+  onDismissUrgentIntervention: () => void;
+  // Coach is watching indicator
+  isCoachWatching: boolean;
 }
 
 export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   structure,
   evaluationResult,
   activeHint,
+  liveNudgeBox,
   selectedErrorId,
   onSelectError,
   onCanvasChange,
@@ -46,33 +48,29 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   strokesHistoryRef,
   redoHistoryRef,
   isOverlayActive,
-  onToggleOverlay,
-  canCompareWithTextbook,
-  onOpenCompare,
+  currentTool,
+  currentColor,
+  currentWidth,
+  isUrgentInterventionOpen,
+  urgentIdentifiedAs,
+  onClearAndRestart,
+  onShowHowToStart,
+  onDismissUrgentIntervention,
+  isCoachWatching,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   const [isDrawing, setIsDrawing] = useState(false);
-  const [currentTool, setCurrentTool] = useState<'pen' | 'eraser'>('pen');
-  const [currentColor, setCurrentColor] = useState<string>('#1E293B'); // Black/Charcoal, Red, Blue
-  const [currentWidth, setCurrentWidth] = useState<number>(3);
   const [showOverlays, setShowOverlays] = useState<boolean>(true);
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 800, height: 600 });
-  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const startPointRef = useRef<Point | null>(null);
+  const lastPointRef = useRef<Point | null>(null);
 
-  // Palettes: Charcoal, Arterial Red, Venous Blue
-  const COLORS = [
-    { label: 'Charcoal', value: '#1E293B' },
-    { label: 'Arterial (Red)', value: '#DC2626' },
-    { label: 'Venous (Blue)', value: '#2563EB' },
-  ];
-
-  const STROKE_WIDTHS = [
-    { label: 'Fine', value: 2 },
-    { label: 'Normal', value: 3 },
-    { label: 'Bold', value: 5 },
-  ];
+  // Inline text input state
+  const [textInputPos, setTextInputPos] = useState<Point | null>(null);
+  const [textInputValue, setTextInputValue] = useState('');
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   const reference = structure.reference;
   const referenceUrl = reference?.image_file
@@ -89,93 +87,22 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     try {
       const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
       strokesHistoryRef.current.push(data);
-      if (strokesHistoryRef.current.length > 25) {
+      if (strokesHistoryRef.current.length > 30) {
         strokesHistoryRef.current.shift();
       }
       redoHistoryRef.current = [];
-      setCanUndo(true);
-      setCanRedo(false);
       onCanvasChange?.();
     } catch (e) {
       console.error('Error saving snapshot:', e);
     }
   }, [canvasRef, strokesHistoryRef, redoHistoryRef, onCanvasChange]);
 
-  // Undo
-  const handleUndo = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || strokesHistoryRef.current.length === 0) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const currentImg = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    redoHistoryRef.current.push(currentImg);
-
-    const prev = strokesHistoryRef.current.pop();
-    if (prev) {
-      ctx.putImageData(prev, 0, 0);
-    }
-    setCanUndo(strokesHistoryRef.current.length > 0);
-    setCanRedo(true);
-    onCanvasChange?.();
-  }, [canvasRef, strokesHistoryRef, redoHistoryRef, onCanvasChange]);
-
-  // Redo
-  const handleRedo = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || redoHistoryRef.current.length === 0) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const currentImg = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    strokesHistoryRef.current.push(currentImg);
-
-    const next = redoHistoryRef.current.pop();
-    if (next) {
-      ctx.putImageData(next, 0, 0);
-    }
-    setCanUndo(true);
-    setCanRedo(redoHistoryRef.current.length > 0);
-    onCanvasChange?.();
-  }, [canvasRef, strokesHistoryRef, redoHistoryRef, onCanvasChange]);
-
-  // Clear canvas
-  const handleClear = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    saveSnapshot();
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    onCanvasChange?.();
-  }, [canvasRef, saveSnapshot, onCanvasChange]);
-
-  // Keyboard shortcuts (Ctrl+Z / Ctrl+Y)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) {
-          handleRedo();
-        } else {
-          handleUndo();
-        }
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-        e.preventDefault();
-        handleRedo();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo]);
-
   // Initialize and resize canvas with HiDPI support
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
-    if (!container || !canvas) return;
+    const previewCanvas = previewCanvasRef.current;
+    if (!container || !canvas || !previewCanvas) return;
 
     const updateSize = () => {
       const rect = container.getBoundingClientRect();
@@ -184,21 +111,26 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
       if (width <= 0 || height <= 0) return;
 
+      const dpr = window.devicePixelRatio || 1;
       const ctx = canvas.getContext('2d');
       let backup: ImageData | null = null;
       if (ctx && canvas.width > 0 && canvas.height > 0) {
         try {
           backup = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        } catch {
-          // ignore
-        }
+        } catch {}
       }
 
-      const dpr = window.devicePixelRatio || 1;
+      // Main drawing canvas
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
+
+      // Drag preview overlay canvas
+      previewCanvas.width = width * dpr;
+      previewCanvas.height = height * dpr;
+      previewCanvas.style.width = `${width}px`;
+      previewCanvas.style.height = `${height}px`;
 
       setCanvasDimensions({ width, height });
 
@@ -211,6 +143,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           ctx.putImageData(backup, 0, 0);
         }
       }
+
+      const pCtx = previewCanvas.getContext('2d');
+      if (pCtx) {
+        pCtx.scale(dpr, dpr);
+      }
     };
 
     updateSize();
@@ -220,22 +157,62 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     return () => observer.disconnect();
   }, [canvasRef]);
 
-  // Canvas drawing handlers (mouse, stylus, touch)
-  const getCoordinates = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  // Pointer coordinate calculation relative to canvas surface
+  const getCoordinates = (e: React.PointerEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
+      pressure: e.pressure,
     };
   };
 
+  // Commit text to canvas
+  const handleCommitText = () => {
+    if (!textInputPos || !textInputValue.trim()) {
+      setTextInputPos(null);
+      setTextInputValue('');
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    saveSnapshot();
+    ctx.save();
+    ctx.fillStyle = currentColor;
+    ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
+    ctx.fillText(textInputValue.trim(), textInputPos.x, textInputPos.y);
+    ctx.restore();
+
+    setTextInputPos(null);
+    setTextInputValue('');
+    onCanvasChange?.();
+  };
+
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    // If text input is open, commit on click
+    if (textInputPos) {
+      handleCommitText();
+    }
+
+    const coords = getCoordinates(e);
+
+    // If Text tool is selected, place text input cursor
+    if (currentTool === 'text') {
+      setTextInputPos(coords);
+      setTimeout(() => textInputRef.current?.focus(), 50);
+      return;
+    }
+
     e.currentTarget.setPointerCapture(e.pointerId);
     saveSnapshot();
     setIsDrawing(true);
-    const coords = getCoordinates(e);
+    startPointRef.current = coords;
     lastPointRef.current = coords;
 
     const canvas = canvasRef.current;
@@ -243,346 +220,309 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.beginPath();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = currentTool === 'eraser' ? currentWidth * 5 : currentWidth;
-    ctx.strokeStyle = currentTool === 'eraser' ? '#FFFFFF' : currentColor;
+    if (currentTool === 'pen' || currentTool === 'eraser') {
+      ctx.beginPath();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = currentTool === 'eraser' ? currentWidth * 5 : currentWidth;
+      ctx.strokeStyle = currentTool === 'eraser' ? '#FFFFFF' : currentColor;
 
-    ctx.moveTo(coords.x, coords.y);
-    ctx.lineTo(coords.x + 0.1, coords.y + 0.1);
-    ctx.stroke();
+      ctx.moveTo(coords.x, coords.y);
+      ctx.lineTo(coords.x + 0.1, coords.y + 0.1);
+      ctx.stroke();
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !lastPointRef.current) return;
+    if (!isDrawing || !startPointRef.current) return;
+    const currentPoint = getCoordinates(e);
+
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const previewCanvas = previewCanvasRef.current;
+    if (!canvas || !previewCanvas) return;
+
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const pCtx = previewCanvas.getContext('2d');
+    if (!ctx || !pCtx) return;
 
-    const coords = getCoordinates(e);
+    if (currentTool === 'pen' || currentTool === 'eraser') {
+      // Freehand drawing directly commits continuous strokes
+      ctx.beginPath();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = currentTool === 'eraser' ? currentWidth * 5 : currentWidth;
+      ctx.strokeStyle = currentTool === 'eraser' ? '#FFFFFF' : currentColor;
 
-    ctx.beginPath();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = currentTool === 'eraser' ? currentWidth * 5 : currentWidth;
-    ctx.strokeStyle = currentTool === 'eraser' ? '#FFFFFF' : currentColor;
+      if (lastPointRef.current) {
+        ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
+      }
+      ctx.lineTo(currentPoint.x, currentPoint.y);
+      ctx.stroke();
 
-    ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
-    ctx.lineTo(coords.x, coords.y);
-    ctx.stroke();
-
-    lastPointRef.current = coords;
+      lastPointRef.current = currentPoint;
+    } else {
+      // Shape dragging live preview: clear preview canvas and draw tentative shape
+      pCtx.clearRect(0, 0, canvasDimensions.width, canvasDimensions.height);
+      drawShape(
+        pCtx,
+        currentTool as 'line' | 'arrow' | 'rectangle' | 'circle' | 'curve',
+        startPointRef.current,
+        currentPoint,
+        currentColor,
+        currentWidth
+      );
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // ignore
+    } catch {}
+
+    const endPoint = getCoordinates(e);
+    const canvas = canvasRef.current;
+    const previewCanvas = previewCanvasRef.current;
+
+    if (canvas && previewCanvas && startPointRef.current) {
+      const ctx = canvas.getContext('2d');
+      const pCtx = previewCanvas.getContext('2d');
+
+      // Clear the live preview overlay
+      if (pCtx) {
+        pCtx.clearRect(0, 0, canvasDimensions.width, canvasDimensions.height);
+      }
+
+      // Commit final shape to main canvas
+      if (
+        ctx &&
+        (currentTool === 'line' ||
+          currentTool === 'arrow' ||
+          currentTool === 'rectangle' ||
+          currentTool === 'circle' ||
+          currentTool === 'curve')
+      ) {
+        drawShape(
+          ctx,
+          currentTool,
+          startPointRef.current,
+          endPoint,
+          currentColor,
+          currentWidth
+        );
+      }
     }
+
     setIsDrawing(false);
+    startPointRef.current = null;
     lastPointRef.current = null;
     onCanvasChange?.();
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 p-3 sm:p-4 overflow-hidden">
-      {/* Prompt Banner */}
-      <div className="mb-3 px-4 py-3 bg-white border border-slate-200 rounded-lg shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
-        <div>
-          <span className="text-[11px] font-bold text-blue-900 uppercase tracking-wider block">
-            Drawing Assignment
-          </span>
-          <p className="text-xs sm:text-sm font-semibold text-slate-800 leading-snug">
-            {structure.promptText}
-          </p>
-        </div>
+    <div
+      ref={containerRef}
+      className="flex-1 w-full h-full bg-slate-100/70 relative overflow-hidden flex items-center justify-center cursor-crosshair touch-none select-none"
+    >
+      {/* Urgent Intervention Red Alert Overlay */}
+      <UrgentInterventionBanner
+        isOpen={isUrgentInterventionOpen}
+        structureName={structure.name}
+        identifiedAs={urgentIdentifiedAs}
+        onClearAndRestart={onClearAndRestart}
+        onShowHowToStart={onShowHowToStart}
+        onDismiss={onDismissUrgentIntervention}
+      />
 
-        {/* Compare with Textbook action if unlocked */}
-        <div className="flex items-center gap-2 shrink-0">
-          {canCompareWithTextbook ? (
-            <button
-              onClick={onOpenCompare}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-md transition-colors shadow-xs cursor-pointer"
-            >
-              <Split className="w-3.5 h-3.5" />
-              <span>Compare with Textbook</span>
-            </button>
-          ) : (
-            <div
-              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-slate-400 bg-slate-100 rounded-md border border-slate-200 select-none"
-              title="Unlock comparison by using 3 hints or submitting your first drawing"
-            >
-              <Lock className="w-3 h-3 text-slate-400" />
-              <span>Compare (Locked)</span>
-            </div>
-          )}
-        </div>
+      {/* Floating "Coach is watching…" Indicator */}
+      <div
+        className={`absolute top-3 left-4 z-30 transition-all duration-300 pointer-events-none flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold shadow-xs ${
+          isCoachWatching
+            ? 'bg-teal-700 text-white opacity-100 scale-100'
+            : 'bg-white/80 text-slate-500 opacity-60 scale-95 border border-slate-200'
+        }`}
+      >
+        <span className={`w-2 h-2 rounded-full ${isCoachWatching ? 'bg-teal-300 animate-ping' : 'bg-slate-400'}`} />
+        <span>{isCoachWatching ? 'Coach is watching…' : 'Live Tutor Ready'}</span>
       </div>
 
-      {/* Main Drawing Card */}
-      <div className="flex-1 flex flex-col bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
-        {/* Minimalist Drawing Toolbar */}
-        <div className="px-3 py-2 border-b border-slate-200 bg-slate-50/80 flex flex-wrap items-center justify-between gap-2 shrink-0">
-          {/* Tool selectors */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setCurrentTool('pen')}
-              className={`p-1.5 rounded-md text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer ${
-                currentTool === 'pen'
-                  ? 'bg-blue-900 text-white shadow-xs'
-                  : 'text-slate-700 hover:bg-slate-200/80'
-              }`}
-              title="Pen tool"
-            >
-              <Pen className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Pen</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTool('eraser')}
-              className={`p-1.5 rounded-md text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer ${
-                currentTool === 'eraser'
-                  ? 'bg-blue-900 text-white shadow-xs'
-                  : 'text-slate-700 hover:bg-slate-200/80'
-              }`}
-              title="Eraser tool"
-            >
-              <Eraser className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Eraser</span>
-            </button>
-          </div>
-
-          <div className="h-4 w-px bg-slate-200" />
-
-          {/* Color Palettes (Charcoal, Red, Blue) */}
-          <div className="flex items-center gap-1.5">
-            {COLORS.map((col) => (
-              <button
-                key={col.value}
-                onClick={() => {
-                  setCurrentColor(col.value);
-                  setCurrentTool('pen');
-                }}
-                className={`w-6 h-6 rounded-md flex items-center justify-center transition-transform cursor-pointer border ${
-                  currentColor === col.value && currentTool === 'pen'
-                    ? 'border-blue-900 ring-2 ring-blue-900/30 scale-105'
-                    : 'border-slate-300 hover:scale-105'
-                }`}
-                style={{ backgroundColor: col.value }}
-                title={col.label}
-              />
-            ))}
-          </div>
-
-          <div className="h-4 w-px bg-slate-200" />
-
-          {/* Stroke Width Selector */}
-          <div className="flex items-center gap-1">
-            {STROKE_WIDTHS.map((sw) => (
-              <button
-                key={sw.value}
-                onClick={() => setCurrentWidth(sw.value)}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                  currentWidth === sw.value
-                    ? 'bg-slate-200 text-slate-900 font-bold'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-                title={`${sw.label} stroke width`}
-              >
-                {sw.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="h-4 w-px bg-slate-200" />
-
-          {/* Reference Overlay (20% Opacity) Toggle */}
-          <button
-            onClick={() => onToggleOverlay(!isOverlayActive)}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors cursor-pointer ${
-              isOverlayActive
-                ? 'bg-blue-900 text-white border-blue-900 shadow-xs'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-            }`}
-            title="Toggle 20% opacity reference overlay on canvas"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">20% Overlay</span>
-          </button>
-
-          {/* Toggle Error Boxes */}
-          {evaluationResult && (
-            <button
-              onClick={() => setShowOverlays(!showOverlays)}
-              className={`p-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
-                showOverlays
-                  ? 'bg-white text-blue-900 border-slate-300'
-                  : 'bg-slate-100 text-slate-400 border-slate-200'
-              }`}
-              title={showOverlays ? 'Hide AI bounding boxes' : 'Show AI bounding boxes'}
-            >
-              {showOverlays ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-            </button>
-          )}
-
-          <div className="h-4 w-px bg-slate-200" />
-
-          {/* Undo / Redo */}
-          <div className="flex items-center gap-0.5">
-            <button
-              onClick={handleUndo}
-              disabled={!canUndo}
-              className="p-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-              title="Undo (Ctrl+Z)"
-            >
-              <Undo2 className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleRedo}
-              disabled={!canRedo}
-              className="p-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-              title="Redo (Ctrl+Y)"
-            >
-              <Redo2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="h-4 w-px bg-slate-200" />
-
-          {/* Clear canvas */}
-          <button
-            onClick={handleClear}
-            className="p-1.5 rounded-md text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-            title="Clear canvas"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Canvas Surface with Ghost Overlay & Bounding Boxes */}
-        <div
-          ref={containerRef}
-          className="flex-1 w-full h-full bg-white relative overflow-hidden flex items-center justify-center cursor-crosshair touch-none select-none"
+      {/* Floating Toggle for Bounding Box Overlay */}
+      {evaluationResult && (
+        <button
+          onClick={() => setShowOverlays(!showOverlays)}
+          className="absolute top-3 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/95 text-slate-700 border border-slate-200 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
         >
-          {/* Reference Image Ghost Overlay (20% Opacity) */}
-          {isOverlayActive && (
-            <img
-              src={referenceUrl}
-              alt="Reference overlay"
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none p-4 z-10 transition-opacity"
-              style={{ opacity: 0.20 }}
-            />
+          {showOverlays ? <Eye className="w-3.5 h-3.5 text-teal-600" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
+          <span>{showOverlays ? 'Hide AI boxes' : 'Show AI boxes'}</span>
+        </button>
+      )}
+
+      {/* 20% Opacity Reference Overlay */}
+      {isOverlayActive && (
+        <img
+          src={referenceUrl}
+          alt="Reference overlay standard"
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none p-6 z-10 transition-opacity"
+          style={{ opacity: 0.20 }}
+        />
+      )}
+
+      {/* Main Persistent Drawing Canvas */}
+      <canvas
+        ref={canvasRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        className="w-full h-full block bg-white z-0"
+        style={{ touchAction: 'none' }}
+      />
+
+      {/* Dragging Preview Shape Overlay Canvas */}
+      <canvas
+        ref={previewCanvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-10 block"
+      />
+
+      {/* Inline Text Input for Anatomy Label Tool */}
+      {textInputPos && (
+        <div
+          className="absolute z-40 bg-white shadow-xl rounded-lg p-1.5 border border-teal-500 flex items-center gap-1.5"
+          style={{ top: `${textInputPos.y - 15}px`, left: `${textInputPos.x}px` }}
+        >
+          <input
+            ref={textInputRef}
+            type="text"
+            value={textInputValue}
+            onChange={(e) => setTextInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCommitText();
+              if (e.key === 'Escape') setTextInputPos(null);
+            }}
+            placeholder="Type label (e.g. Left Ventricle)..."
+            className="px-2 py-1 text-xs border border-slate-200 rounded font-semibold text-slate-800 outline-none focus:ring-1 focus:ring-teal-600 w-48"
+          />
+          <button
+            onClick={handleCommitText}
+            className="px-2.5 py-1 bg-teal-600 text-white rounded text-xs font-bold hover:bg-teal-700 cursor-pointer"
+          >
+            Add
+          </button>
+        </div>
+      )}
+
+      {/* Bounding Box Annotations Layer */}
+      {showOverlays && (
+        <div className="absolute inset-0 pointer-events-none z-20">
+          {/* Live Nudge Box (Gentle amber pulsing marker during drawing) */}
+          {liveNudgeBox && (
+            (() => {
+              const { top, left, width, height } = convertBoxToPixels(
+                liveNudgeBox,
+                canvasDimensions.width,
+                canvasDimensions.height
+              );
+              return (
+                <div
+                  className="absolute border-2 border-dashed border-amber-500 bg-amber-500/10 rounded pointer-events-none animate-pulse"
+                  style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px` }}
+                >
+                  <span className="absolute -top-5 left-0 px-2 py-0.5 rounded bg-amber-600 text-white text-[10px] font-bold shadow-xs whitespace-nowrap">
+                    💡 Check Proportions
+                  </span>
+                </div>
+              );
+            })()
           )}
 
-          <canvas
-            ref={canvasRef}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            className="w-full h-full block bg-white z-0"
-            style={{ touchAction: 'none' }}
-          />
+          {/* Correct structures (Emerald boxes) */}
+          {evaluationResult?.correctItems?.map((item, idx) => {
+            if (!item.box_2d) return null;
+            const { top, left, width, height } = convertBoxToPixels(
+              item.box_2d,
+              canvasDimensions.width,
+              canvasDimensions.height
+            );
+            return (
+              <div
+                key={`correct-${item.id || idx}`}
+                className="absolute border-2 border-emerald-500 bg-emerald-500/10 rounded pointer-events-auto transition-all duration-200 hover:bg-emerald-500/20"
+                style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px` }}
+              >
+                <span className="absolute -top-5 left-0 px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold shadow-xs whitespace-nowrap">
+                  ✓ {item.item || item.name}
+                </span>
+              </div>
+            );
+          })}
 
-          {/* Bounding Box Marker Layer */}
-          {showOverlays && (
-            <div className="absolute inset-0 pointer-events-none z-20">
-              {/* Correct structures (Green boxes) */}
-              {evaluationResult?.correctItems?.map((item, idx) => {
-                if (!item.box_2d) return null;
-                const { top, left, width, height } = convertBoxToPixels(
-                  item.box_2d,
-                  canvasDimensions.width,
-                  canvasDimensions.height
-                );
-                return (
-                  <div
-                    key={`correct-${item.id || idx}`}
-                    className="absolute border-2 border-emerald-600 bg-emerald-500/10 rounded pointer-events-auto transition-all duration-200 hover:bg-emerald-500/20"
-                    style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px` }}
-                  >
-                    <span className="absolute -top-5 left-0 px-1.5 py-0.5 rounded bg-emerald-700 text-white text-[10px] font-bold shadow-xs whitespace-nowrap">
-                      ✓ {item.item || item.name}
-                    </span>
-                  </div>
-                );
-              })}
+          {/* Errors (Red for major, Orange for minor) */}
+          {evaluationResult?.errors?.map((err) => {
+            if (!err.box_2d) return null;
+            const { top, left, width, height } = convertBoxToPixels(
+              err.box_2d,
+              canvasDimensions.width,
+              canvasDimensions.height
+            );
+            const isSelected = selectedErrorId === err.id;
+            const isMajor = err.severity === 'major';
 
-              {/* Errors (Red for major, Orange for minor) */}
-              {evaluationResult?.errors?.map((err) => {
-                if (!err.box_2d) return null;
-                const { top, left, width, height } = convertBoxToPixels(
-                  err.box_2d,
-                  canvasDimensions.width,
-                  canvasDimensions.height
-                );
-                const isSelected = selectedErrorId === err.id;
-                const isMajor = err.severity === 'major';
+            return (
+              <div
+                key={`err-${err.id}`}
+                onClick={() => onSelectError(err.id)}
+                className={`absolute rounded pointer-events-auto cursor-pointer transition-all duration-200 ${
+                  isMajor
+                    ? isSelected
+                      ? 'border-2 border-rose-600 bg-rose-500/25 ring-4 ring-rose-400/40 z-30'
+                      : 'border-2 border-rose-500 bg-rose-500/15 hover:bg-rose-500/25 z-20'
+                    : isSelected
+                    ? 'border-2 border-amber-600 bg-amber-500/25 ring-4 ring-amber-400/40 z-30'
+                    : 'border-2 border-amber-500 bg-amber-500/15 hover:bg-amber-500/25 z-20'
+                }`}
+                style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px` }}
+              >
+                <div
+                  className={`absolute -top-3 -left-3 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-xs border border-white ${
+                    isMajor ? 'bg-rose-600' : 'bg-amber-600'
+                  }`}
+                >
+                  {err.id}
+                </div>
 
-                return (
-                  <div
-                    key={`err-${err.id}`}
-                    onClick={() => onSelectError(err.id)}
-                    className={`absolute rounded pointer-events-auto cursor-pointer transition-all duration-200 ${
-                      isMajor
-                        ? isSelected
-                          ? 'border-2 border-rose-600 bg-rose-500/25 ring-3 ring-rose-400/40 z-30'
-                          : 'border-2 border-rose-500 bg-rose-500/15 hover:bg-rose-500/25 z-20'
-                        : isSelected
-                        ? 'border-2 border-amber-600 bg-amber-500/25 ring-3 ring-amber-400/40 z-30'
-                        : 'border-2 border-amber-500 bg-amber-500/15 hover:bg-amber-500/25 z-20'
-                    }`}
-                    style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px` }}
-                  >
-                    {/* Badge number matching side panel */}
-                    <div
-                      className={`absolute -top-3 -left-3 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-xs border border-white ${
-                        isMajor ? 'bg-rose-600' : 'bg-amber-600'
-                      }`}
-                    >
-                      {err.id}
-                    </div>
+                <div
+                  className={`absolute bottom-full left-0 mb-1 px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap text-white ${
+                    isMajor ? 'bg-rose-700' : 'bg-amber-700'
+                  }`}
+                >
+                  #{err.id} {err.what_is_wrong?.slice(0, 32) || err.label || 'Correction'}
+                </div>
+              </div>
+            );
+          })}
 
-                    {/* Short label */}
-                    <div
-                      className={`absolute bottom-full left-0 mb-1 px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap text-white ${
-                        isMajor ? 'bg-rose-700' : 'bg-amber-700'
-                      }`}
-                    >
-                      #{err.id} {err.what_is_wrong?.slice(0, 30) || err.label || 'Error'}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Active Hint Focus Region (Dark blue pulsing box) */}
-              {activeHint?.box_2d && (
-                (() => {
-                  const { top, left, width, height } = convertBoxToPixels(
-                    activeHint.box_2d,
-                    canvasDimensions.width,
-                    canvasDimensions.height
-                  );
-                  return (
-                    <div
-                      className="absolute border-2 border-blue-600 bg-blue-600/15 rounded pointer-events-none animate-pulse z-30"
-                      style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px` }}
-                    >
-                      <span className="absolute -top-5 left-0 px-2 py-0.5 rounded bg-blue-900 text-white text-[10px] font-bold shadow-xs whitespace-nowrap">
-                        Focus Region (Hint Level {activeHint.level})
-                      </span>
-                    </div>
-                  );
-                })()
-              )}
-            </div>
+          {/* Active Hint Focus Region */}
+          {activeHint?.box_2d && (
+            (() => {
+              const { top, left, width, height } = convertBoxToPixels(
+                activeHint.box_2d,
+                canvasDimensions.width,
+                canvasDimensions.height
+              );
+              return (
+                <div
+                  className="absolute border-2 border-teal-500 bg-teal-500/15 rounded pointer-events-none animate-pulse z-30"
+                  style={{ top: `${top}px`, left: `${left}px`, width: `${width}px`, height: `${height}px` }}
+                >
+                  <span className="absolute -top-5 left-0 px-2 py-0.5 rounded bg-teal-700 text-white text-[10px] font-bold shadow-xs whitespace-nowrap">
+                    Focus Region (Level {activeHint.level})
+                  </span>
+                </div>
+              );
+            })()
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

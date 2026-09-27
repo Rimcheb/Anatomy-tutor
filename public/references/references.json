@@ -1,0 +1,47 @@
+[
+  {
+    "structure": "Heart – anterior view",
+    "image_file": "heart_anterior.jpg",
+    "source_title": "Anatomy and Physiology 2e",
+    "figure_number": "Figure 19.8",
+    "author": "OpenStax",
+    "license": "CC BY 4.0",
+    "source_url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/19-1-heart-anatomy"
+  },
+  {
+    "structure": "Nephron",
+    "image_file": "nephron.svg",
+    "source_title": "Anatomy and Physiology 2e",
+    "figure_number": "Figure 25.8",
+    "author": "OpenStax",
+    "license": "CC BY 4.0",
+    "source_url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/25-2-microscopic-anatomy-of-the-kidney"
+  },
+  {
+    "structure": "Brachial Plexus",
+    "image_file": "brachial_plexus.svg",
+    "source_title": "Anatomy and Physiology 2e",
+    "figure_number": "Figure 13.15",
+    "author": "OpenStax",
+    "license": "CC BY 4.0",
+    "source_url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/13-3-spinal-and-cranial-nerves"
+  },
+  {
+    "structure": "Neuron",
+    "image_file": "neuron.svg",
+    "source_title": "Anatomy and Physiology 2e",
+    "figure_number": "Figure 12.8",
+    "author": "OpenStax",
+    "license": "CC BY 4.0",
+    "source_url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/12-2-nervous-tissue"
+  },
+  {
+    "structure": "Knee joint – sagittal",
+    "image_file": "knee_joint_sagittal.svg",
+    "source_title": "Anatomy and Physiology 2e",
+    "figure_number": "Figure 9.17",
+    "author": "OpenStax",
+    "license": "CC BY 4.0",
+    "source_url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/9-5-types-of-body-movements"
+  }
+]

@@ -1,0 +1,120 @@
+{
+  "heart-anterior": {
+    "structure_id": "heart-anterior",
+    "structure_name": "Heart – anterior view",
+    "level": "Undergraduate Health-Science",
+    "prompt": "Draw the heart, anterior view. Label the 4 chambers, the great vessels and the valves.",
+    "clinical_context": "The sternocostal surface is critical in emergency medicine (pericardiocentesis, trauma, ECG lead placement). The right ventricle constitutes the vast majority of the anterior silhouette, while the left ventricle forms the apex pointing inferolaterally to the patient's left.",
+    "required_structures": [
+      {
+        "name": "Right Ventricle",
+        "relative_position": "Center and lower right of the cardiac silhouette; forms the vast majority of the anterior/sternocostal surface",
+        "typical_size_relative_to_whole": "Large; occupies approximately 40-50% of the visible anterior ventricular area"
+      },
+      {
+        "name": "Left Ventricle",
+        "relative_position": "Anatomical left border (viewer's right); forms the inferior-lateral margin and cardiac apex",
+        "typical_size_relative_to_whole": "Moderate anteriorly; occupies approximately 20-25% of visible anterior surface (narrow strip and apex)"
+      },
+      {
+        "name": "Right Atrium and Auricle",
+        "relative_position": "Anatomical right margin (viewer's left), superior to the right ventricle; auricle overlaps the proximal ascending aorta",
+        "typical_size_relative_to_whole": "Moderate; approximately 15-20% of anterior cardiac mass"
+      },
+      {
+        "name": "Left Auricle",
+        "relative_position": "Visible on the anatomical left shoulder of the heart, immediately lateral to the base of the pulmonary trunk",
+        "typical_size_relative_to_whole": "Small; approximately 5% of anterior cardiac surface"
+      },
+      {
+        "name": "Pulmonary Trunk",
+        "relative_position": "Originates from the infundibulum of the right ventricle, anterior and slightly leftward relative to the ascending aorta",
+        "typical_size_relative_to_whole": "Moderate vessel caliber; comparable in diameter to the ascending aorta"
+      },
+      {
+        "name": "Ascending Aorta & Arch",
+        "relative_position": "Emerges posterior to the pulmonary trunk, curves superiorly and toward the anatomical left, giving off three brachiocephalic branches",
+        "typical_size_relative_to_whole": "Large prominent vascular trunk; spans superior midline"
+      },
+      {
+        "name": "Superior Vena Cava (SVC)",
+        "relative_position": "Vertical vessel on the anatomical right, entering the superior aspect of the right atrium, lateral to the ascending aorta",
+        "typical_size_relative_to_whole": "Moderate vessel caliber; slightly narrower than ascending aorta"
+      },
+      {
+        "name": "Apex of the Heart",
+        "relative_position": "Inferior-most tip of the left ventricle, oriented inferolaterally toward the anatomical left (viewer's right)",
+        "typical_size_relative_to_whole": "Focal point/landmark; formed entirely by left ventricle"
+      },
+      {
+        "name": "Anterior Interventricular Sulcus",
+        "relative_position": "Groove running obliquely from near the pulmonary base down toward the apex (terminating just right of the apex)",
+        "typical_size_relative_to_whole": "Linear boundary spanning across the lower two-thirds of the ventricular mass"
+      }
+    ],
+    "required_labels": [
+      "Superior Vena Cava",
+      "Ascending Aorta / Aortic Arch",
+      "Pulmonary Trunk",
+      "Right Atrium",
+      "Right Auricle",
+      "Right Ventricle",
+      "Left Auricle",
+      "Left Ventricle",
+      "Apex",
+      "Anterior Interventricular Sulcus",
+      "Brachiocephalic Trunk",
+      "Left Common Carotid Artery",
+      "Left Subclavian Artery"
+    ],
+    "key_relationships": [
+      {
+        "structure_pair": "Pulmonary Trunk and Ascending Aorta",
+        "relationship_description": "The pulmonary trunk must arise anterior to the ascending aorta; the aorta arches over the right pulmonary artery and posterior to the bifurcation of the pulmonary trunk."
+      },
+      {
+        "structure_pair": "Superior Vena Cava and Right Atrium",
+        "relationship_description": "The SVC must connect directly into the superior-posterior aspect of the right atrium without crossing other major vessels."
+      },
+      {
+        "structure_pair": "Right Ventricle and Left Ventricle",
+        "relationship_description": "The right ventricle must dominate the sternocostal surface; the left ventricle is separated by the anterior interventricular sulcus and forms the apex."
+      },
+      {
+        "structure_pair": "Aortic Arch Branches",
+        "relationship_description": "Three distinct branches must originate along the superior convexity of the arch in strict anatomical sequence from right to left: Brachiocephalic trunk, Left Common Carotid, Left Subclavian."
+      },
+      {
+        "structure_pair": "Auricles to Great Arteries",
+        "relationship_description": "The right auricle wraps around the base of the ascending aorta; the left auricle projects anteriorly adjacent to the left of the pulmonary trunk."
+      }
+    ],
+    "common_student_mistakes": [
+      {
+        "mistake_rank": 1,
+        "error_description": "Inversion of anatomical perspective",
+        "visual_sign": "Drawing the left ventricle on the viewer's left and right ventricle on the viewer's right (failing to use anatomical orientation)."
+      },
+      {
+        "mistake_rank": 2,
+        "error_description": "Transposition/depth error of great vessels",
+        "visual_sign": "Drawing the ascending aorta emerging anteriorly to the pulmonary trunk, rather than emerging posterior-rightward to it."
+      },
+      {
+        "mistake_rank": 3,
+        "error_description": "Disproportionate ventricular surface area",
+        "visual_sign": "Drawing the left ventricle as the dominant anterior surface instead of the right ventricle, neglecting that the LV is predominantly posterior/lateral."
+      },
+      {
+        "mistake_rank": 4,
+        "error_description": "Incorrect apex location and orientation",
+        "visual_sign": "Placing the apex in the midline or pointing toward the anatomical right, or depicting it as being formed by the right ventricle."
+      },
+      {
+        "mistake_rank": 5,
+        "error_description": "Branching errors of the aortic arch",
+        "visual_sign": "Drawing four branches, omitting the brachiocephalic trunk, or drawing symmetric paired common carotids directly off the arch."
+      }
+    ]
+  }
+}

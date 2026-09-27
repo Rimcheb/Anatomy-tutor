@@ -495,7 +495,6 @@ export default function App() {
           setIsCompareModalOpen(true);
         }}
         canCompareWithTextbook={canCompareWithTextbook}
-        onLoadDemo={handleLoadDemo}
         attempts={attempts}
         latestScore={latestScore}
         previousScore={previousScore}

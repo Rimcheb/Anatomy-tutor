@@ -30,10 +30,10 @@ const apiKey = process.env.real_GEMINI_API_KEY?.trim() || '';
 
 // Model names mapping for Gemini 2.5
 const MODELS = {
-  grading: 'gemini-2.5-flash',
-  guidance: 'gemini-2.5-flash',
-  hint: 'gemini-2.5-flash-lite',
-  live: 'gemini-2.5-flash-lite',
+  grading: 'gemini-3.8-flash',
+  guidance: 'gemini-3.8-flash',
+  hint: 'gemini-3.5-flash-lite',
+  live: 'gemini-3.5-flash-lite',
 };
 
 // Helper: auto-retry with the other 2.5 model if a 429 quota error occurs
@@ -43,8 +43,7 @@ async function generateContentWithQuotaRetry(
   generateParams: { contents: any[]; config: any }
 ) {
   const fallbackModel =
-    primaryModel === 'gemini-2.5-flash' ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';
-
+    primaryModel === 'gemini-3.8-flash' ? 'gemini-3.5-flash-lite' : 'gemini-3.8-flash';
   try {
     return await ai.models.generateContent({
       model: primaryModel,

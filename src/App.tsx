@@ -458,7 +458,14 @@ export default function App() {
           stepNumber,
           complete: data.step_complete,
           feedback: data.feedback,
+        });else {
+        const err = await response.json().catch(() => ({}));
+        setStepCoachFeedback({
+          stepNumber,
+          complete: false,
+          feedback: `AI unavailable: ${err.reason || err.error || response.status}`,
         });
+      }
       }
     } catch (err) {
       console.error('Step coach error:', err);

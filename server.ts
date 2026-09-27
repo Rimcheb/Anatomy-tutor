@@ -23,10 +23,54 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Read injected Gemini API key
 const apiKey = process.env.GEMINI_API_KEY?.trim() || '';
+
+// Model names mapping for Gemini 2.5
+const MODELS = {
+  grading: 'gemini-2.5-flash',
+  guidance: 'gemini-2.5-flash',
+  hint: 'gemini-2.5-flash-lite',
+  live: 'gemini-2.5-flash-lite',
+};
+
+// Helper: auto-retry with the other 2.5 model if a 429 quota error occurs
+async function generateContentWithQuotaRetry(
+  ai: GoogleGenAI,
+  primaryModel: string,
+  generateParams: { contents: any[]; config: any }
+) {
+  const fallbackModel =
+    primaryModel === 'gemini-2.5-flash' ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';
+
+  try {
+    return await ai.models.generateContent({
+      model: primaryModel,
+      ...generateParams,
+    });
+  } catch (err: any) {
+    const errMsg = err?.message || '';
+    const is429 =
+      errMsg.includes('429') ||
+      errMsg.includes('quota') ||
+      errMsg.includes('RESOURCE_EXHAUSTED') ||
+      err?.status === 429 ||
+      err?.error?.code === 429;
+
+    if (is429) {
+      console.warn(
+        `Gemini model ${primaryModel} hit 429 quota. Automatically retrying with fallback model ${fallbackModel}...`
+      );
+      return await ai.models.generateContent({
+        model: fallbackModel,
+        ...generateParams,
+      });
+    }
+    throw err;
+  }
+}
 
 // Load rubrics JSON
 const rubricsPath = path.join(__dirname, 'src', 'data', 'rubrics.json');
@@ -145,7 +189,6 @@ async function startServer() {
   });
 
   // API: Live Inspection (Periodically inspects unfinished drawing while student sketches)
-  // Real Gemini inference only — NO demo shortcuts, NO fake results
   app.post('/api/tutor/live-inspect', async (req, res) => {
     const { imageBase64 } = req.body;
     if (!imageBase64) {
@@ -167,8 +210,7 @@ async function startServer() {
       const promptText = LIVE_INSPECTION_SYSTEM_INSTRUCTION
         .replace('⟦STRUCTURE⟧', 'Heart – anterior view');
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateContentWithQuotaRetry(ai, MODELS.live, {
         contents: [
           { inlineData: { mimeType, data: cleanBase64 } },
           promptText,
@@ -192,7 +234,6 @@ async function startServer() {
   });
 
   // API: Check My Drawing (sends Image 1 reference + Image 2 student drawing to Gemini)
-  // Real Gemini inference only — NO demo shortcuts, NO canned 74 evaluation
   app.post('/api/tutor/check', async (req, res) => {
     const { imageBase64, structureId } = req.body;
     if (!imageBase64) {
@@ -236,8 +277,7 @@ async function startServer() {
       // Prompt
       contents.push(promptText);
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateContentWithQuotaRetry(ai, MODELS.grading, {
         contents,
         config: {
           responseMimeType: 'application/json',
@@ -280,7 +320,6 @@ async function startServer() {
   });
 
   // API: Hint Ladder (Socratic level 1, Regional level 2, Specific Fix level 3)
-  // Real Gemini inference only — NO canned hints
   app.post('/api/tutor/hint', async (req, res) => {
     const { imageBase64, structureId, hintLevel } = req.body;
     const targetStructureId = structureId || 'heart-anterior';
@@ -312,8 +351,7 @@ async function startServer() {
       }
       contents.push(promptText);
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateContentWithQuotaRetry(ai, MODELS.hint, {
         contents,
         config: {
           responseMimeType: 'application/json',
@@ -365,8 +403,7 @@ async function startServer() {
       }
       contents.push(promptText);
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateContentWithQuotaRetry(ai, MODELS.guidance, {
         contents,
         config: {
           responseMimeType: 'application/json',
@@ -409,8 +446,7 @@ async function startServer() {
         .replace('⟦N⟧', String(stepNumber || 1))
         .replace('⟦STEP⟧', stepInstruction || '');
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const response = await generateContentWithQuotaRetry(ai, MODELS.live, {
         contents: [
           { inlineData: { mimeType: mime, data: cleanBase64 } },
           promptText,
@@ -433,13 +469,20 @@ async function startServer() {
     }
   });
 
-  // Mount Vite middleware in development
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: 'spa',
-  });
-
-  app.use(vite.middlewares);
+  // Production static serving vs development Vite middleware
+  if (process.env.NODE_ENV === 'production') {
+    const distPath = path.join(__dirname, 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  } else {
+    const vite = await createViteServer({
+      server: { middlewareMode: true, allowedHosts: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  }
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Anatomy Tutor server running at http://localhost:${PORT}`);

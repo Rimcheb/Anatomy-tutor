@@ -128,7 +128,10 @@ export interface DrawingEvaluationResult {
   unrelated_identified_as?: string;
   playful_tease?: string;
   neutral_unrelated_message?: string;
+  peekCount?: number;
 }
+
+export type FlowStage = 'study' | 'draw' | 'check';
 
 export interface HintResponse {
   level: 1 | 2 | 3;
@@ -151,4 +154,5 @@ export interface AttemptRecord {
   score: number;
   errorsCount: number;
   canvasDataUrl: string;
+  peekCount?: number;
 }

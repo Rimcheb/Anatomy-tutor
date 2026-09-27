@@ -17,9 +17,6 @@ import { CompareModal } from './components/CompareModal';
 import { ImageCreditsModal } from './components/ImageCreditsModal';
 import {
   getDownscaledCanvasDataUrl,
-  drawSampleHeartWithMistakes,
-  drawSampleUnlabeledHeart,
-  drawSampleCat,
 } from './utils/canvasHelpers';
 
 export default function App() {
@@ -318,47 +315,6 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
-
-  // Load Demo Sketches (Pre-drawn canvases sent directly to Gemini with no shortcuts)
-  const handleLoadDemo = useCallback((type: 'heart-mistakes' | 'heart-unlabeled' | 'cat') => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    try {
-      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      strokesHistoryRef.current.push(data);
-    } catch {}
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    setEvaluationResult(null);
-    setEvaluationError(null);
-    setActiveHint(null);
-    setSelectedErrorId(null);
-    setIsUrgentInterventionOpen(false);
-
-    if (type === 'heart-mistakes') {
-      drawSampleHeartWithMistakes(ctx, canvas.width, canvas.height);
-    } else if (type === 'heart-unlabeled') {
-      drawSampleUnlabeledHeart(ctx, canvas.width, canvas.height);
-    } else if (type === 'cat') {
-      drawSampleCat(ctx, canvas.width, canvas.height);
-    }
-
-    // Simulate drawing commitment: strokes count qualifies for live check
-    strokesSinceClearCountRef.current = 6;
-    canvasChangedSinceLastCheckRef.current = true;
-    lastLiveCheckTimeRef.current = 0; // allow immediate live inspection
-    syncCanvasSnapshot();
-
-    // Trigger live inspection via Gemini
-    setTimeout(() => {
-      triggerLiveInspection();
-    }, 400);
-  }, [syncCanvasSnapshot, triggerLiveInspection]);
 
   // Check if comparison with textbook is unlocked
   const canCompareWithTextbook = attempts.length > 0 || hintLevelsUsed.size >= 3;

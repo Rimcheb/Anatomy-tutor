@@ -23,10 +23,10 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Read injected Gemini API key
-const apiKey = process.env.GEMINI_API_KEY?.trim() || '';
+const apiKey = process.env.real_GEMINI_API_KEY?.trim() || '';
 
 // Model names mapping for Gemini 2.5
 const MODELS = {

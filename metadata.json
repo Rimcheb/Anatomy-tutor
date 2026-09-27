@@ -1,0 +1,6 @@
+{
+  "name": "Anatomy Tutor",
+  "description": "AI drawing tutor for health-science students to learn anatomy by sketching from memory and receiving expert visual feedback.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,452 @@
+{
+  "structures": [
+    {
+      "id": "heart-anterior",
+      "name": "Heart – anterior view",
+      "difficulty": "Intermediate",
+      "category": "Cardiovascular",
+      "promptText": "Draw the heart, anterior view. Label the 4 chambers, the great vessels and the valves.",
+      "clinicalContext": "Essential for cardiology, emergency medicine, and bedside echocardiography orientation.",
+      "requiredParts": [
+        "Right Atrium (forms right heart border)",
+        "Right Ventricle (dominates anterior sternocostal surface)",
+        "Left Ventricle (forms apex and left margin)",
+        "Left Atrium / Left Auricle (visible peeking superior-posterior)",
+        "Superior Vena Cava (SVC entering right atrium)",
+        "Inferior Vena Cava (IVC entering inferior right atrium)",
+        "Ascending Aorta & Aortic Arch (with 3 brachiocephalic branches)",
+        "Pulmonary Trunk & Left/Right Pulmonary Arteries",
+        "Tricuspid Valve (between RA and RV)",
+        "Bicuspid / Mitral Valve (between LA and LV)",
+        "Aortic Semilunar Valve (LV outflow)",
+        "Pulmonary Semilunar Valve (RV outflow)"
+      ],
+      "requiredLabels": [
+        "Right Atrium",
+        "Right Ventricle",
+        "Left Atrium (or Auricle)",
+        "Left Ventricle",
+        "Superior Vena Cava (SVC)",
+        "Ascending Aorta / Arch",
+        "Pulmonary Trunk",
+        "Tricuspid Valve",
+        "Bicuspid (Mitral) Valve",
+        "Aortic Valve",
+        "Pulmonary Valve",
+        "Apex"
+      ],
+      "spatialRelationships": [
+        "Anatomical orientation: Patient's right is on the VIEWER'S LEFT. The right atrium and ventricle must be on the left side of the drawing.",
+        "The right ventricle forms the majority of the anterior sternocostal surface.",
+        "The apex is formed entirely by the inferolateral tip of the left ventricle and points inferiorly and to the viewer's right.",
+        "The pulmonary trunk emerges ANTERIOR to the ascending aorta, crossing from right to left before bifurcation.",
+        "The ascending aorta arches superiorly behind the pulmonary trunk, curving toward the left.",
+        "SVC enters the superior aspect of the right atrium vertically."
+      ],
+      "commonStudentMistakes": [
+        "Inverting anatomical left and right (mirror error): Drawing the right atrium on the right side of the page.",
+        "Placing the aorta anterior to the pulmonary trunk.",
+        "Originating the aorta from the right ventricle instead of the left ventricle.",
+        "Making the right ventricle form the apex instead of the left ventricle.",
+        "Omitting the pulmonary trunk bifurcation or the three aortic arch branches (Brachiocephalic, Left Common Carotid, Left Subclavian).",
+        "Reversing tricuspid (tri = right, 3 cusps) and bicuspid/mitral (left, 2 cusps) valves."
+      ],
+      "drawingPlan": [
+        {
+          "stepNumber": 1,
+          "title": "Silhouette & Apex Alignment",
+          "instruction": "Lightly sketch the cardiac silhouette shaped like an inverted, tilted blunt cone. Direct the apex toward the lower right (patient's left, roughly 45° tilt).",
+          "landmarks": "Apex points inferior-left; base sits superiorly beneath the sternal angle.",
+          "proportionsTip": "The heart should be slightly wider than it is tall, with 2/3 of the mass to the patient's left.",
+          "keyParts": ["Overall cardiac outline", "Apex angle", "Base boundary"]
+        },
+        {
+          "stepNumber": 2,
+          "title": "Internal Septum & 4 Chambers",
+          "instruction": "Divide the heart with the interventricular and interatrial sulci. Draw the thick muscular wall of the left ventricle (3x thicker than the right ventricle) and thinner atrial chambers.",
+          "landmarks": "Right atrium forms right border; right ventricle dominates anterior face; left ventricle forms left border and apex.",
+          "proportionsTip": "Left ventricular wall thickness should visually appear ~3x that of the right ventricle.",
+          "keyParts": ["Right Atrium", "Right Ventricle", "Left Ventricle", "Left Atrium / Auricle", "Interventricular Septum"]
+        },
+        {
+          "stepNumber": 3,
+          "title": "Great Outflow Vessels (Crossing Trick)",
+          "instruction": "Draw the pulmonary trunk emerging from the right ventricle infundibulum crossing ANTERIOR to the aorta. Next, draw the wide ascending aorta rising behind it from the left ventricle and arching over to the left.",
+          "landmarks": "Pulmonary trunk is anterior; Aortic arch arches over the right pulmonary artery and branches into 3 vessels.",
+          "proportionsTip": "Aorta should have a wide, prominent caliber with brachiocephalic, left common carotid, and subclavian arteries.",
+          "keyParts": ["Pulmonary Trunk & Arteries", "Ascending Aorta & Arch", "SVC", "IVC"]
+        },
+        {
+          "stepNumber": 4,
+          "title": "Atrioventricular & Semilunar Valves",
+          "instruction": "Position the Tricuspid valve between RA and RV (3 cusps, chordae tendineae to papillary muscles) and the Mitral valve between LA and LV (2 cusps). Add the semilunar valves at base of aorta and pulmonary trunk.",
+          "landmarks": "AV valves positioned horizontally along the fibrous skeleton plane.",
+          "proportionsTip": "AV valves sit deeper between chambers, semilunar valves guard arterial exits.",
+          "keyParts": ["Tricuspid Valve", "Mitral (Bicuspid) Valve", "Aortic Valve", "Pulmonary Valve"]
+        },
+        {
+          "stepNumber": 5,
+          "title": "Anatomical Labels & Orientation Check",
+          "instruction": "Label all 4 chambers, the 4 great vessels (SVC, IVC, Aorta, Pulmonary Trunk), and key valves. Double-check that your anatomical left/right corresponds to the patient's perspective.",
+          "landmarks": "Ensure 'Right' labels are on the left side of the drawing!",
+          "proportionsTip": "Use clean pointer lines with clear horizontal text tags.",
+          "keyParts": ["RA, RV, LA, LV", "SVC, Aorta, Pulm Trunk", "Tricuspid, Mitral", "Apex"]
+        }
+      ]
+    },
+    {
+      "id": "nephron",
+      "name": "Nephron",
+      "difficulty": "Intermediate",
+      "category": "Renal Physiology",
+      "promptText": "Draw a functional nephron. Label the glomerulus, Bowman's capsule, proximal convoluted tubule (PCT), loop of Henle, distal convoluted tubule (DCT), and collecting duct.",
+      "clinicalContext": "Critical for understanding GFR, renal clearance, diuretic pharmacodynamics, and acid-base regulation.",
+      "requiredParts": [
+        "Renal Corpuscle (Bowman's capsule + Glomerular capillary tuft)",
+        "Afferent Arteriole (wider lumen entering)",
+        "Efferent Arteriole (narrower lumen exiting)",
+        "Proximal Convoluted Tubule (PCT with brush border/cuboidal epithelium)",
+        "Descending Thin Limb of Henle",
+        "Hairpin Turn of Henle (reaching into renal medulla)",
+        "Ascending Limb of Henle (thin and thick ascending segments)",
+        "Distal Convoluted Tubule (DCT)",
+        "Corticomedullary boundary reference",
+        "Collecting Duct (shared receiving tubule)"
+      ],
+      "requiredLabels": [
+        "Glomerulus",
+        "Bowman's Capsule",
+        "Afferent Arteriole",
+        "Efferent Arteriole",
+        "Proximal Convoluted Tubule (PCT)",
+        "Descending Limb of Henle",
+        "Loop of Henle (Hairpin turn)",
+        "Thick Ascending Limb",
+        "Distal Convoluted Tubule (DCT)",
+        "Collecting Duct",
+        "Renal Cortex / Medulla Zone"
+      ],
+      "spatialRelationships": [
+        "Corticomedullary demarcation: Renal corpuscle, PCT, and DCT are situated in the renal cortex.",
+        "The Loop of Henle dips deeply down across the corticomedullary junction into the renal medulla.",
+        "Afferent arteriole enters the vascular pole; efferent arteriole exits adjacent to it with a narrower diameter (creates hydrostatic pressure).",
+        "The DCT curves back tightly to contact the vascular pole of its originating nephron (forming the juxtaglomerular apparatus).",
+        "Multiple DCTs empty laterally into a single vertical collecting duct."
+      ],
+      "commonStudentMistakes": [
+        "Drawing afferent and efferent arterioles with identical caliber (afferent must be wider).",
+        "Confusing the order of convoluted tubules (PCT comes directly after Bowman's capsule, DCT comes after loop of Henle).",
+        "Keeping the loop of Henle in the cortex instead of plunging vertically into the medulla.",
+        "Not showing the DCT returning adjacent to the vascular pole / glomerulus.",
+        "Missing the differentiation between thin descending limb and thick ascending limb."
+      ],
+      "drawingPlan": [
+        {
+          "stepNumber": 1,
+          "title": "Cortex-Medulla Baseline & Renal Corpuscle",
+          "instruction": "Draw a dashed horizontal line across the middle representing the corticomedullary boundary. In the upper cortex, sketch a double-walled cup (Bowman's capsule) enclosing an invaginated capillary knot (Glomerulus).",
+          "landmarks": "Corpuscle sits high in the cortex.",
+          "proportionsTip": "Leave ample vertical room beneath for the descending loop.",
+          "keyParts": ["Glomerulus", "Bowman's Capsule", "Corticomedullary border"]
+        },
+        {
+          "stepNumber": 2,
+          "title": "Vascular Pole Arterioles",
+          "instruction": "Draw the afferent arteriole entering with a visibly wider caliber and the efferent arteriole exiting with a narrower caliber. This caliper differential creates the filtration hydrostatic gradient.",
+          "landmarks": "Arterioles enter/exit the vascular pole opposite the tubular urinary pole.",
+          "proportionsTip": "Afferent:Efferent diameter ratio ~ 1.5 : 1.",
+          "keyParts": ["Afferent Arteriole", "Efferent Arteriole"]
+        },
+        {
+          "stepNumber": 3,
+          "title": "Proximal Convoluted Tubule (PCT)",
+          "instruction": "Extend the urinary pole of Bowman's capsule into a tortuous, looped winding segment in the cortex (the PCT) where 65% of solute and water reabsorption occurs.",
+          "landmarks": "Tightly coiled near the corpuscle in the cortex.",
+          "proportionsTip": "Draw 3-4 tight undulations before plunging straight down.",
+          "keyParts": ["Proximal Convoluted Tubule (PCT)"]
+        },
+        {
+          "stepNumber": 4,
+          "title": "Loop of Henle (Descending & Ascending)",
+          "instruction": "Plunge straight down across the dashed corticomedullary line into the medulla as a thin descending limb, make a smooth hairpin loop, and ascend back up. Thicken the tube as it becomes the Thick Ascending Limb (TAL).",
+          "landmarks": "Hairpin turn is the deepest point in the inner medulla.",
+          "proportionsTip": "Descending limb is thin; ascending limb widens conspicuously in the outer medulla.",
+          "keyParts": ["Descending Limb", "Hairpin Loop", "Thick Ascending Limb"]
+        },
+        {
+          "stepNumber": 5,
+          "title": "Distal Convoluted Tubule & Collecting Duct",
+          "instruction": "In the cortex, loop the DCT past the glomerulus vascular pole (JGA region), then drain it into a tall, straight, branching vertical collecting duct traversing from cortex through medulla.",
+          "landmarks": "DCT loops near Bowman's capsule before feeding into collecting duct.",
+          "proportionsTip": "Collecting duct should show small branching tributary stumps for adjacent nephrons.",
+          "keyParts": ["Distal Convoluted Tubule (DCT)", "Collecting Duct", "Complete Labels"]
+        }
+      ]
+    },
+    {
+      "id": "brachial-plexus",
+      "name": "Brachial Plexus",
+      "difficulty": "Advanced",
+      "category": "Neuroanatomy",
+      "promptText": "Draw the brachial plexus schematic (Roots, Trunks, Divisions, Cords, Terminal Branches). Label the 5 terminal nerves (Musculocutaneous, Axillary, Radial, Median, Ulnar).",
+      "clinicalContext": "Fundamental for regional anesthesia blocks, Erb's and Klumpke's palsies, and traumatic upper limb nerve injury localization.",
+      "requiredParts": [
+        "5 Spinal Roots (C5, C6, C7, C8, T1)",
+        "3 Trunks (Superior C5-C6, Middle C7, Inferior C8-T1)",
+        "6 Divisions (3 Anterior divisions, 3 Posterior divisions)",
+        "3 Cords (Lateral, Posterior, Medial named relative to axillary artery)",
+        "Classic 'M' shape connecting Lateral Cord, Medial Cord, and Median Nerve",
+        "5 Terminal Branches (MARMU: Musculocutaneous, Axillary, Radial, Median, Ulnar)"
+      ],
+      "requiredLabels": [
+        "Roots (C5, C6, C7, C8, T1)",
+        "Superior Trunk",
+        "Middle Trunk",
+        "Inferior Trunk",
+        "Anterior & Posterior Divisions",
+        "Lateral Cord",
+        "Posterior Cord",
+        "Medial Cord",
+        "Musculocutaneous Nerve",
+        "Axillary Nerve",
+        "Radial Nerve",
+        "Median Nerve",
+        "Ulnar Nerve"
+      ],
+      "spatialRelationships": [
+        "Progressive columns left-to-right: Roots -> Trunks -> Divisions -> Cords -> Branches ('Robert Taylor Drinks Cold Beer').",
+        "Roots C5 & C6 unite into Superior Trunk; C7 continues as Middle Trunk; C8 & T1 unite into Inferior Trunk.",
+        "ALL THREE Posterior Divisions unite to form the single Posterior Cord.",
+        "Anterior divisions of Superior & Middle trunks form the Lateral Cord.",
+        "Anterior division of Inferior trunk continues as the Medial Cord.",
+        "Lateral Cord and Medial Cord each contribute a limb to form the Median nerve (forming the distinctive anterior 'M').",
+        "Musculocutaneous continues off Lateral Cord; Ulnar continues off Medial Cord; Axillary and Radial emerge from Posterior Cord."
+      ],
+      "commonStudentMistakes": [
+        "Drawing only 4 roots (forgetting T1 or combining C8 incorrectly).",
+        "Failing to merge all 3 posterior divisions into the posterior cord.",
+        "Drawing the Median nerve arising from a single cord instead of a two-rooted fork from Lateral and Medial cords.",
+        "Reversing Radial (large posterior) and Axillary (smaller upper posterior) branches.",
+        "Misaligning the 5 vertical organizational zones (Roots, Trunks, Divisions, Cords, Branches)."
+      ],
+      "drawingPlan": [
+        {
+          "stepNumber": 1,
+          "title": "The 5 Roots & 5 Organizational Columns",
+          "instruction": "Draw 5 horizontal entry lines on the left edge stacked vertically: C5, C6, C7, C8, T1. Mark 5 column zones across the canvas: Roots, Trunks, Divisions, Cords, Branches.",
+          "landmarks": "Remember the mnemonic: 'Robert Taylor Drinks Cold Beer' (Roots, Trunks, Divisions, Cords, Branches).",
+          "proportionsTip": "Leave equal horizontal spacing (~20% width per column) across the canvas.",
+          "keyParts": ["C5, C6, C7, C8, T1 Roots"]
+        },
+        {
+          "stepNumber": 2,
+          "title": "Trunks (3 from 5)",
+          "instruction": "Merge C5 and C6 into the Superior Trunk. Extend C7 straight across as the Middle Trunk. Merge C8 and T1 into the Inferior Trunk.",
+          "landmarks": "Superior (C5-6), Middle (C7), Inferior (C8-T1).",
+          "proportionsTip": "Middle trunk stays central and straight.",
+          "keyParts": ["Superior Trunk", "Middle Trunk", "Inferior Trunk"]
+        },
+        {
+          "stepNumber": 3,
+          "title": "Divisions (Anterior vs Posterior)",
+          "instruction": "Split each trunk into two: an anterior and a posterior division (6 lines total). Use dashed lines or distinctive angled strokes for posterior divisions so they stand out.",
+          "landmarks": "3 Anterior divisions (flexor compartment) and 3 Posterior divisions (extensor compartment).",
+          "proportionsTip": "Keep the posterior divisions heading toward a central focal point.",
+          "keyParts": ["6 Divisions (3 Anterior, 3 Posterior)"]
+        },
+        {
+          "stepNumber": 4,
+          "title": "Cords & The Posterior Merger",
+          "instruction": "Combine anterior divisions of Superior & Middle into the Lateral Cord. Combine ALL 3 posterior divisions into the Posterior Cord. Continue the anterior division of the Inferior trunk as the Medial Cord.",
+          "landmarks": "Lateral cord is high; Posterior cord is central; Medial cord is low.",
+          "proportionsTip": "All 3 posterior divisions converge into one thick posterior cord.",
+          "keyParts": ["Lateral Cord", "Posterior Cord", "Medial Cord"]
+        },
+        {
+          "stepNumber": 5,
+          "title": "The 'M' Pattern & 5 Terminal Branches",
+          "instruction": "Draw the iconic 'M': Lateral cord sends limb down, Medial cord sends limb up to meet and form the Median Nerve. Lateral continues as Musculocutaneous. Medial continues as Ulnar. Posterior cord branches into smaller Axillary and large Radial nerve.",
+          "landmarks": "MARMU: Musculocutaneous, Axillary, Radial, Median, Ulnar.",
+          "proportionsTip": "Radial nerve is thick and runs inferolaterally; axillary is shorter.",
+          "keyParts": ["Musculocutaneous", "Axillary", "Radial", "Median", "Ulnar"]
+        }
+      ]
+    },
+    {
+      "id": "neuron",
+      "name": "Neuron",
+      "difficulty": "Beginner",
+      "category": "Neurobiology",
+      "promptText": "Draw a multipolar motor neuron. Label the soma/cell body, dendrites, axon hillock, axon, myelin sheath, nodes of Ranvier, and axon terminals / synaptic boutons.",
+      "clinicalContext": "Foundation of neuromuscular junctions, multiple sclerosis (demyelination), ALS, and pharmacology of neurotransmission.",
+      "requiredParts": [
+        "Soma / Cell Body (containing round nucleus and prominent nucleolus)",
+        "Branching Dendrites (with dendritic spines receiving input)",
+        "Axon Hillock (tapering conical trigger zone, unmyelinated)",
+        "Axon (long central conducting shaft)",
+        "Myelin Sheath Segments (Schwann cells / oligodendrocytes)",
+        "Nodes of Ranvier (uninsulated periodic gaps between myelin segments)",
+        "Telodendria / Terminal Arborization",
+        "Synaptic Boutons / Axon Terminals"
+      ],
+      "requiredLabels": [
+        "Soma (Cell Body)",
+        "Nucleus & Nucleolus",
+        "Dendrites",
+        "Axon Hillock",
+        "Axon",
+        "Myelin Sheath",
+        "Node of Ranvier",
+        "Axon Terminals (Synaptic Boutons)",
+        "Direction of Action Potential (Impulse Vector)"
+      ],
+      "spatialRelationships": [
+        "Polarity and direction: Input arrives at dendrites -> integrated in soma -> action potential initiated at axon hillock -> propagates down axon -> output at axon terminals.",
+        "Axon hillock is the unmyelinated funnel-shaped transition zone between soma and axon shaft.",
+        "Myelin covers the axon in repeating sausage-shaped cylindrical segments; the gaps in between are the Nodes of Ranvier.",
+        "Myelin NEVER extends over the soma, dendrites, or terminal boutons.",
+        "Axon terminals branch out into swollen synaptic end bulbs."
+      ],
+      "commonStudentMistakes": [
+        "Drawing myelin over the soma or covering the axon hillock.",
+        "Drawing continuous myelin without leaving gaps for Nodes of Ranvier (saltatory conduction requires nodes).",
+        "Confusing dendrites with axon terminal branches.",
+        "Omitting the nucleus from the soma.",
+        "Reversing the direction of the action potential."
+      ],
+      "drawingPlan": [
+        {
+          "stepNumber": 1,
+          "title": "Soma & Core Organelles",
+          "instruction": "Draw a star-shaped or multipolar cell body (soma) on the left side. Inside, draw a clear circular nucleus with a darkened central nucleolus.",
+          "landmarks": "Soma acts as the metabolic control center.",
+          "proportionsTip": "Make the soma about 20-25% of total canvas width so there is room for the long axon.",
+          "keyParts": ["Soma / Cell Body", "Nucleus", "Nucleolus"]
+        },
+        {
+          "stepNumber": 2,
+          "title": "Dendritic Arborization",
+          "instruction": "Radiate 4-6 branching dendrites off the soma, tapering like tree branches. Add small thorns/bumps representing dendritic spines.",
+          "landmarks": "Dendrites spread out into receptive field.",
+          "proportionsTip": "Dendrites branch extensively close to the cell body.",
+          "keyParts": ["Dendrites", "Dendritic Spines"]
+        },
+        {
+          "stepNumber": 3,
+          "title": "Axon Hillock & Axon Shaft",
+          "instruction": "From one side of the soma, draw a smooth conical tapering funnel (the axon hillock). From its tip, extend a straight, long, uniform-diameter line across the canvas (the axon).",
+          "landmarks": "Axon hillock is the trigger zone for action potential generation; keep it clean and unmyelinated.",
+          "proportionsTip": "The axon shaft maintains constant caliber along its entire length.",
+          "keyParts": ["Axon Hillock", "Axon"]
+        },
+        {
+          "stepNumber": 4,
+          "title": "Myelin Sheaths & Nodes of Ranvier",
+          "instruction": "Wrap the axon in 4 to 6 elongated rounded bead/sausage shapes representing myelin segments. Leave clear unmyelinated gaps (~2-4mm) between each segment: these are the Nodes of Ranvier.",
+          "landmarks": "Nodes of Ranvier allow high-speed saltatory conduction.",
+          "proportionsTip": "Leave distinct bare gaps between each myelin cuff.",
+          "keyParts": ["Myelin Sheath", "Nodes of Ranvier"]
+        },
+        {
+          "stepNumber": 5,
+          "title": "Terminal Branches & Synaptic Boutons",
+          "instruction": "At the distal end of the axon, fan out 3-5 terminal branches (telodendria). End each branch with a rounded button (synaptic bouton / axon terminal) and add full anatomical labels.",
+          "landmarks": "Terminals interface with target muscle or post-synaptic neuron.",
+          "proportionsTip": "Add an arrow showing impulse travel from left to right.",
+          "keyParts": ["Axon Terminals", "Synaptic Boutons", "Impulse Arrow", "Labels"]
+        }
+      ]
+    },
+    {
+      "id": "knee-joint-sagittal",
+      "name": "Knee joint – sagittal",
+      "difficulty": "Intermediate",
+      "category": "Musculoskeletal",
+      "promptText": "Draw the knee joint in sagittal cross-section. Label the femur, tibia, patella, patellar tendon/ligament, quadriceps tendon, anterior/posterior cruciate ligaments (ACL/PCL), and meniscus.",
+      "clinicalContext": "Core knowledge for orthopedic physical exam (Lachman test, McMurray test), sports injury diagnostics, and arthroplasty.",
+      "requiredParts": [
+        "Distal Femur (smooth femoral condyle with articular cartilage)",
+        "Proximal Tibia (tibial plateau with tibial tuberosity on anterior side)",
+        "Patella (sesamoid bone anteriorly positioned in trochlear groove)",
+        "Quadriceps Tendon (connecting quad muscle to superior patellar pole)",
+        "Patellar Ligament / Tendon (connecting inferior patella to tibial tuberosity)",
+        "Anterior Cruciate Ligament (ACL, running anterior-inferior on tibia to posterolateral femur)",
+        "Posterior Cruciate Ligament (PCL, running posterior tibia to anteromedial femur)",
+        "Meniscus (wedge-shaped fibrocartilaginous cushion on tibial plateau)",
+        "Joint capsule / Suprapatellar bursa cushion",
+        "Anterior and Posterior orientation indicators"
+      ],
+      "requiredLabels": [
+        "Femur (Condyle)",
+        "Tibia (Plateau)",
+        "Tibial Tuberosity",
+        "Patella",
+        "Quadriceps Tendon",
+        "Patellar Ligament",
+        "Anterior Cruciate Ligament (ACL)",
+        "Posterior Cruciate Ligament (PCL)",
+        "Meniscus (Anterior & Posterior horns)",
+        "Articular Cartilage",
+        "Anterior / Posterior Aspect"
+      ],
+      "spatialRelationships": [
+        "Clearly indicate ANTERIOR (facing patella and tibial tuberosity) vs POSTERIOR.",
+        "Patella sits anteriorly, floating over the femoral trochlea, embedded within the extensor mechanism.",
+        "The quadriceps tendon inserts into the superior pole of the patella.",
+        "The patellar ligament originates from the inferior pole of the patella and inserts onto the tibial tuberosity.",
+        "ACL originates on the posterior femur and inserts ANTERIORLY on the tibial plateau (prevents anterior translation of tibia).",
+        "PCL originates on the anterior-inner femur and inserts POSTERIORLY on the tibia (prevents posterior translation).",
+        "Menisci appear as triangular wedges resting on the tibial plateau under the curved femoral condyles."
+      ],
+      "commonStudentMistakes": [
+        "Inverting the cruciate ligaments (drawing PCL anteriorly or confusing their cross pattern).",
+        "Attaching the quadriceps tendon directly to the tibia without the patella acting as the fulcrum.",
+        "Omitting the wedge shape of the meniscus or placing it inside the bone.",
+        "Failing to indicate which side is Anterior vs Posterior.",
+        "Forgetting the tibial tuberosity bump on the anterior tibia."
+      ],
+      "drawingPlan": [
+        {
+          "stepNumber": 1,
+          "title": "Bony Framework (Femur & Tibia)",
+          "instruction": "Draw the distal end of the femur with its rounded curved condyle. Below it, leave a joint space gap and draw the horizontal plateau of the proximal tibia with a distinct anterior bump for the tibial tuberosity. Mark 'ANTERIOR' on one side.",
+          "landmarks": "Femoral condyle curves down; tibial plateau is nearly flat; tibial tuberosity points anteriorly.",
+          "proportionsTip": "Leave ~2cm joint space between femur and tibia for intra-articular structures.",
+          "keyParts": ["Femur", "Tibia", "Tibial Tuberosity", "Anterior/Posterior marks"]
+        },
+        {
+          "stepNumber": 2,
+          "title": "The Extensor Apparatus & Patella",
+          "instruction": "Draw the teardrop-shaped patella suspended anterior to the femoral condyle. Draw the thick Quadriceps Tendon attaching to its top, and the sturdy Patellar Ligament running from its bottom tip down into the tibial tuberosity.",
+          "landmarks": "Patella acts as a pulley/fulcrum for knee extension.",
+          "proportionsTip": "Patellar ligament should be tight and straight in full extension or gentle flexion.",
+          "keyParts": ["Patella", "Quadriceps Tendon", "Patellar Ligament"]
+        },
+        {
+          "stepNumber": 3,
+          "title": "Meniscal Wedges (Anterior & Posterior)",
+          "instruction": "On top of the flat tibial plateau, draw two small triangular wedges of fibrocartilage: one anterior horn and one posterior horn, tapering toward the center.",
+          "landmarks": "Wedges cup the rounded femoral condyle on both sides.",
+          "proportionsTip": "Thick outer edge, paper-thin inner edge (classic wedge profile).",
+          "keyParts": ["Anterior Meniscus Horn", "Posterior Meniscus Horn"]
+        },
+        {
+          "stepNumber": 4,
+          "title": "Cruciate Ligaments (The Cross)",
+          "instruction": "Draw the ACL starting from the posterior aspect of the femoral condyle and angling down to insert on the ANTERIOR intercondylar tibia. Draw the PCL crossing behind it, running from anterior-medial femur down to the POSTERIOR intercondylar tibia.",
+          "landmarks": "They cross each other like an 'X'. ACL attaches anteriorly on tibia; PCL attaches posteriorly on tibia.",
+          "proportionsTip": "Notice that the PCL is slightly thicker and more vertical in flexion.",
+          "keyParts": ["Anterior Cruciate Ligament (ACL)", "Posterior Cruciate Ligament (PCL)"]
+        },
+        {
+          "stepNumber": 5,
+          "title": "Articular Cartilage & Final Labels",
+          "instruction": "Coat the articular surfaces of the femoral condyle, tibial plateau, and posterior patella with smooth cartilage layers. Label all components, including tendons, bones, ligaments, and orientation.",
+          "landmarks": "Clear labels with pointers avoiding messy crossovers.",
+          "proportionsTip": "Check that ACL tibial attachment is distinctly anterior to PCL tibial attachment.",
+          "keyParts": ["Femur, Tibia, Patella", "Quad tendon, Patellar ligament", "ACL, PCL, Meniscus"]
+        }
+      ]
+    }
+  ]
+}

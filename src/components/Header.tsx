@@ -13,6 +13,7 @@ import {
   Cat,
   Heart,
   CheckCircle2,
+  Radio,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -28,6 +29,8 @@ interface HeaderProps {
   previousScore: number | null;
   teaseMode: boolean;
   onToggleTeaseMode: () => void;
+  isLiveCoachEnabled: boolean;
+  onToggleLiveCoach: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -43,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   previousScore,
   teaseMode,
   onToggleTeaseMode,
+  isLiveCoachEnabled,
+  onToggleLiveCoach,
 }) => {
   const [isDemoDropdownOpen, setIsDemoDropdownOpen] = useState(false);
 
@@ -193,6 +198,20 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
+        {/* Live Coach Controls Toggle */}
+        <button
+          onClick={onToggleLiveCoach}
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors cursor-pointer ${
+            isLiveCoachEnabled
+              ? 'bg-teal-50 text-teal-800 border-teal-300'
+              : 'bg-white text-slate-500 border-slate-200'
+          }`}
+          title="Toggle periodic live coaching inspection while drawing"
+        >
+          <span className={`w-2 h-2 rounded-full ${isLiveCoachEnabled ? 'bg-teal-600 animate-pulse' : 'bg-slate-400'}`} />
+          <span className="hidden md:inline">Live Coach: {isLiveCoachEnabled ? 'ON' : 'OFF'}</span>
+        </button>
+
         {/* Tease Mode Toggle */}
         <button
           onClick={onToggleTeaseMode}
@@ -204,7 +223,7 @@ export const Header: React.FC<HeaderProps> = ({
           title="Toggle playful tease mode vs neutral message when drawing is unrelated"
         >
           <Smile className={`w-3.5 h-3.5 ${teaseMode ? 'text-teal-600' : 'text-slate-400'}`} />
-          <span className="hidden md:inline">Tease Mode: {teaseMode ? 'ON' : 'OFF'}</span>
+          <span className="hidden lg:inline">Tease: {teaseMode ? 'ON' : 'OFF'}</span>
         </button>
 
         {/* Faculty Rubric Button */}

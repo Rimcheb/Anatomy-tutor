@@ -56,6 +56,8 @@ interface SidePanelProps {
   teaseMode: boolean;
   // Coach watching status
   isCoachWatching: boolean;
+  // Gemini error state
+  evaluationError?: { error: string; reason: string } | null;
 }
 
 export const SidePanel: React.FC<SidePanelProps> = ({
@@ -80,9 +82,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   hintLevelsUsedCount,
   teaseMode,
   isCoachWatching,
+  evaluationError,
 }) => {
   const [activeTab, setActiveTab] = useState<'feedback' | 'guide' | 'hint'>(
-    evaluationResult ? 'feedback' : 'guide'
+    evaluationResult || evaluationError ? 'feedback' : 'guide'
   );
 
   // Guide me step tracking
@@ -443,7 +446,26 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           {/* ================= TAB 3: CHECK DRAWING & FEEDBACK ================= */}
           {activeTab === 'feedback' && (
             <div className="p-4 space-y-4">
-              {!evaluationResult ? (
+              {evaluationError && !evaluationResult ? (
+                <div className="p-4 bg-rose-50 border border-rose-300 rounded-2xl shadow-xs space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2 text-rose-800">
+                    <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                    <span className="font-extrabold text-xs uppercase tracking-wider">
+                      Faculty Grading Unavailable
+                    </span>
+                  </div>
+                  <p className="text-xs text-rose-950 font-medium leading-relaxed">
+                    {evaluationError.reason || 'Gemini service is experiencing high demand. Please try grading again.'}
+                  </p>
+                  <button
+                    onClick={onCheckDrawing}
+                    className="w-full py-2.5 px-3 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Retry Grading</span>
+                  </button>
+                </div>
+              ) : !evaluationResult ? (
                 <div className="space-y-4 text-center py-6">
                   <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center mx-auto text-teal-600 shadow-xs">
                     <Sparkles className="w-6 h-6" />

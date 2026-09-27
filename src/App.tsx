@@ -16,6 +16,7 @@ import { RubricModal } from './components/RubricModal';
 import { CompareModal } from './components/CompareModal';
 import { ImageCreditsModal } from './components/ImageCreditsModal';
 import {
+  getDownscaledCanvasDataUrl,
   drawSampleHeartWithMistakes,
   drawSampleUnlabeledHeart,
   drawSampleCat,
@@ -43,6 +44,7 @@ export default function App() {
 
   // AI Evaluation & Hint state
   const [evaluationResult, setEvaluationResult] = useState<DrawingEvaluationResult | null>(null);
+  const [evaluationError, setEvaluationError] = useState<{ error: string; reason: string } | null>(null);
   const [activeHint, setActiveHint] = useState<HintResponse | null>(null);
   const [selectedErrorId, setSelectedErrorId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,15 +53,22 @@ export default function App() {
   const [stepCoachFeedback, setStepCoachFeedback] = useState<{ stepNumber: number; complete: boolean; feedback: string } | null>(null);
   const [currentCanvasDataUrl, setCurrentCanvasDataUrl] = useState<string | null>(null);
 
-  // Live Coaching state
+  // Live Coaching state & controls
+  const [isLiveCoachEnabled, setIsLiveCoachEnabled] = useState(true);
   const [isCoachWatching, setIsCoachWatching] = useState(false);
   const [liveNudgeMessage, setLiveNudgeMessage] = useState<string | null>(null);
   const [liveNudgeBox, setLiveNudgeBox] = useState<[number, number, number, number] | null>(null);
   const [isUrgentInterventionOpen, setIsUrgentInterventionOpen] = useState(false);
   const [urgentIdentifiedAs, setUrgentIdentifiedAs] = useState<string | undefined>(undefined);
+
+  // Live Coach condition trackers
+  const strokesSinceClearCountRef = useRef<number>(0);
+  const canvasChangedSinceLastCheckRef = useRef<boolean>(false);
+  const isLiveCheckInFlightRef = useRef<boolean>(false);
+  const lastLiveCheckTimeRef = useRef<number>(0);
   const consecutiveOffTrackRef = useRef<number>(0);
+  const suppressAlertUntilRef = useRef<number>(0);
   const liveInspectTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const activeDemoTypeRef = useRef<string | null>(null);
 
   // Tease mode toggle (ON by default)
   const [teaseMode, setTeaseMode] = useState(true);
@@ -101,15 +110,17 @@ export default function App() {
       setLatestScore(null);
       setPreviousScore(null);
     }
-    // Reset transient evaluation when switching structure
+    // Reset state on structure switch
     setEvaluationResult(null);
+    setEvaluationError(null);
     setActiveHint(null);
     setSelectedErrorId(null);
     setLiveNudgeMessage(null);
     setLiveNudgeBox(null);
     setIsUrgentInterventionOpen(false);
     consecutiveOffTrackRef.current = 0;
-    activeDemoTypeRef.current = null;
+    strokesSinceClearCountRef.current = 0;
+    canvasChangedSinceLastCheckRef.current = false;
   }, [currentStructure.id]);
 
   // Handle switching structure
@@ -141,66 +152,87 @@ export default function App() {
   }, []);
 
   // Periodic Live Inspection (Coach watching as student draws)
-  const triggerLiveInspection = useCallback(async (overrideDemoType?: string) => {
+  // Strict rule: Only run if toggle ON, >= 4 strokes since clear, canvas changed, no request in flight, and >= 8s since last call
+  const triggerLiveInspection = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const demoType = overrideDemoType || activeDemoTypeRef.current;
+    if (!isLiveCoachEnabled) return;
+    if (strokesSinceClearCountRef.current < 4) return;
+    if (!canvasChangedSinceLastCheckRef.current) return;
+    if (isLiveCheckInFlightRef.current) return;
+
+    const now = Date.now();
+    if (now - lastLiveCheckTimeRef.current < 8000) return;
+
+    // Set locks & update state
+    isLiveCheckInFlightRef.current = true;
+    lastLiveCheckTimeRef.current = now;
+    canvasChangedSinceLastCheckRef.current = false;
     setIsCoachWatching(true);
 
     try {
-      const imageBase64 = canvas.toDataURL('image/png');
+      // Downscale to max 768px for live coaching checks for fast transmission
+      const imageBase64 = getDownscaledCanvasDataUrl(canvas, 768, 'image/jpeg', 0.80);
+
       const response = await fetch('/api/tutor/live-inspect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageBase64,
           structureId: currentStructure.id,
-          demoType,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
+        const confidence = Number(data.confidence) || 0;
 
         if (data.status === 'urgent_intervention') {
           consecutiveOffTrackRef.current += 1;
-          // Trigger urgent intervention if confident or after 2 consecutive checks
-          if (consecutiveOffTrackRef.current >= 1 || data.confidence > 0.85) {
+          const isSuppressed = Date.now() < suppressAlertUntilRef.current;
+          // Red alert: only open when TWO consecutive checks return urgent_intervention with confidence >= 0.85
+          if (!isSuppressed && consecutiveOffTrackRef.current >= 2 && confidence >= 0.85) {
             setIsUrgentInterventionOpen(true);
-            setUrgentIdentifiedAs(data.identified_as || 'unrelated drawing');
+            setUrgentIdentifiedAs(data.identified_as || 'unrelated subject');
           }
-        } else if (data.status === 'nudge') {
-          consecutiveOffTrackRef.current = 0;
-          setLiveNudgeMessage(data.message);
-          setLiveNudgeBox(data.box_2d || null);
         } else {
-          // on_track
+          // If on_track or nudge, reset consecutive count
           consecutiveOffTrackRef.current = 0;
-          setLiveNudgeMessage(null);
-          setLiveNudgeBox(null);
+          setIsUrgentInterventionOpen(false);
+
+          if (data.status === 'nudge') {
+            setLiveNudgeMessage(data.message);
+            setLiveNudgeBox(data.box_2d || null);
+          } else {
+            setLiveNudgeMessage(null);
+            setLiveNudgeBox(null);
+          }
         }
       }
     } catch (err) {
       console.warn('Live inspect error:', err);
     } finally {
-      setTimeout(() => setIsCoachWatching(false), 800);
+      isLiveCheckInFlightRef.current = false;
+      setTimeout(() => setIsCoachWatching(false), 600);
     }
-  }, [currentStructure.id]);
+  }, [currentStructure.id, isLiveCoachEnabled]);
 
   // Debounced listener on canvas strokes to trigger live coaching
   const handleCanvasChange = useCallback(() => {
     syncCanvasSnapshot();
+    strokesSinceClearCountRef.current += 1;
+    canvasChangedSinceLastCheckRef.current = true;
 
-    // Reset timer on active strokes
+    // Reset debounce timer on active strokes
     if (liveInspectTimerRef.current) {
       clearTimeout(liveInspectTimerRef.current);
     }
 
-    // Inspect 3 seconds after student pauses drawing
+    // Attempt inspection after pause
     liveInspectTimerRef.current = setTimeout(() => {
       triggerLiveInspection();
-    }, 3000);
+    }, 2000);
   }, [syncCanvasSnapshot, triggerLiveInspection]);
 
   // Undo / Redo / Clear handlers
@@ -217,6 +249,7 @@ export default function App() {
     if (prev) {
       ctx.putImageData(prev, 0, 0);
     }
+    canvasChangedSinceLastCheckRef.current = true;
     syncCanvasSnapshot();
   }, [syncCanvasSnapshot]);
 
@@ -233,6 +266,7 @@ export default function App() {
     if (next) {
       ctx.putImageData(next, 0, 0);
     }
+    canvasChangedSinceLastCheckRef.current = true;
     syncCanvasSnapshot();
   }, [syncCanvasSnapshot]);
 
@@ -252,10 +286,19 @@ export default function App() {
     setIsUrgentInterventionOpen(false);
     setLiveNudgeMessage(null);
     setLiveNudgeBox(null);
+    setEvaluationError(null);
+    setEvaluationResult(null);
     consecutiveOffTrackRef.current = 0;
-    activeDemoTypeRef.current = null;
+    strokesSinceClearCountRef.current = 0;
+    canvasChangedSinceLastCheckRef.current = false;
     syncCanvasSnapshot();
   }, [syncCanvasSnapshot]);
+
+  // "I'm not done yet" suppresses red alerts for 30s
+  const handleDismissUrgentIntervention = useCallback(() => {
+    setIsUrgentInterventionOpen(false);
+    suppressAlertUntilRef.current = Date.now() + 30000;
+  }, []);
 
   // Keyboard shortcuts (Cmd/Ctrl + Z, Cmd/Ctrl + Y)
   useEffect(() => {
@@ -276,7 +319,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
 
-  // Load Demo Sketches (Reliable demonstration of flows)
+  // Load Demo Sketches (Pre-drawn canvases sent directly to Gemini with no shortcuts)
   const handleLoadDemo = useCallback((type: 'heart-mistakes' | 'heart-unlabeled' | 'cat') => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -291,32 +334,36 @@ export default function App() {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    activeDemoTypeRef.current = type;
     setEvaluationResult(null);
+    setEvaluationError(null);
     setActiveHint(null);
     setSelectedErrorId(null);
     setIsUrgentInterventionOpen(false);
 
     if (type === 'heart-mistakes') {
       drawSampleHeartWithMistakes(ctx, canvas.width, canvas.height);
-      syncCanvasSnapshot();
-      setTimeout(() => triggerLiveInspection('heart-mistakes'), 600);
     } else if (type === 'heart-unlabeled') {
       drawSampleUnlabeledHeart(ctx, canvas.width, canvas.height);
-      syncCanvasSnapshot();
-      setTimeout(() => triggerLiveInspection('heart-unlabeled'), 600);
     } else if (type === 'cat') {
       drawSampleCat(ctx, canvas.width, canvas.height);
-      syncCanvasSnapshot();
-      // Instantly triggers urgent intervention alert
-      setTimeout(() => triggerLiveInspection('cat'), 500);
     }
+
+    // Simulate drawing commitment: strokes count qualifies for live check
+    strokesSinceClearCountRef.current = 6;
+    canvasChangedSinceLastCheckRef.current = true;
+    lastLiveCheckTimeRef.current = 0; // allow immediate live inspection
+    syncCanvasSnapshot();
+
+    // Trigger live inspection via Gemini
+    setTimeout(() => {
+      triggerLiveInspection();
+    }, 400);
   }, [syncCanvasSnapshot, triggerLiveInspection]);
 
   // Check if comparison with textbook is unlocked
   const canCompareWithTextbook = attempts.length > 0 || hintLevelsUsed.size >= 3;
 
-  // Call Gemini to Check / Grade My Drawing
+  // Call Gemini to Check / Grade My Drawing (Real Gemini inference only)
   const handleCheckDrawing = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -324,9 +371,11 @@ export default function App() {
     setIsLoading(true);
     setLoadingMessage('Your tutor is grading your diagram against the rubric…');
     setActiveHint(null);
+    setEvaluationError(null);
 
     try {
-      const imageBase64 = canvas.toDataURL('image/png');
+      // Downscale to max 1024px for grading for high fidelity and fast upload
+      const imageBase64 = getDownscaledCanvasDataUrl(canvas, 1024, 'image/jpeg', 0.85);
       setCurrentCanvasDataUrl(imageBase64);
 
       const response = await fetch('/api/tutor/check', {
@@ -335,17 +384,23 @@ export default function App() {
         body: JSON.stringify({
           imageBase64,
           structureId: currentStructure.id,
-          demoType: activeDemoTypeRef.current,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Server returned ${response.status}`);
+        const errObj = {
+          error: errorData.error || 'Grading Service Error',
+          reason: errorData.reason || `Gemini service returned status ${response.status}. Please try again.`,
+        };
+        setEvaluationError(errObj);
+        setEvaluationResult(null);
+        return;
       }
 
       const data: DrawingEvaluationResult = await response.json();
 
+      setEvaluationError(null);
       setPreviousScore(latestScore);
       setLatestScore(data.overallScore);
       setEvaluationResult(data);
@@ -362,6 +417,11 @@ export default function App() {
       setAttempts((prev) => [...prev, newAttempt]);
     } catch (err: any) {
       console.error('Check drawing error:', err);
+      setEvaluationError({
+        error: 'Network or API Error',
+        reason: err.message || 'Unable to reach the grading service. Please check connection and retry.',
+      });
+      setEvaluationResult(null);
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
@@ -371,7 +431,7 @@ export default function App() {
   // Call Gemini for Hint Ladder
   const handleRequestHint = async (level: 1 | 2 | 3) => {
     const canvas = canvasRef.current;
-    const imageBase64 = canvas ? canvas.toDataURL('image/png') : undefined;
+    const imageBase64 = canvas ? getDownscaledCanvasDataUrl(canvas, 768, 'image/jpeg', 0.80) : undefined;
     if (canvas) setCurrentCanvasDataUrl(canvas.toDataURL('image/png'));
 
     setIsLoading(true);
@@ -389,7 +449,8 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Hint request failed: ${response.statusText}`);
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.reason || `Hint request failed: ${response.statusText}`);
       }
 
       const data: HintResponse = await response.json();
@@ -402,6 +463,13 @@ export default function App() {
       });
     } catch (err: any) {
       console.error('Hint error:', err);
+      setActiveHint({
+        level,
+        type: 'socratic',
+        title: 'Tutor Momentarily Unavailable',
+        message: 'The AI tutor is currently experiencing high demand. Please try requesting a hint in a few moments.',
+        concept: 'High traffic retry',
+      });
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
@@ -417,7 +485,7 @@ export default function App() {
     setLoadingMessage(`Evaluating Step ${stepNumber} on canvas…`);
 
     try {
-      const imageBase64 = canvas.toDataURL('image/png');
+      const imageBase64 = getDownscaledCanvasDataUrl(canvas, 768, 'image/jpeg', 0.80);
       const response = await fetch('/api/tutor/step-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -450,12 +518,12 @@ export default function App() {
       handleClear();
     }
     setEvaluationResult(null);
+    setEvaluationError(null);
     setActiveHint(null);
     setSelectedErrorId(null);
     setLiveNudgeMessage(null);
     setLiveNudgeBox(null);
     setIsUrgentInterventionOpen(false);
-    activeDemoTypeRef.current = null;
   };
 
   return (
@@ -477,6 +545,8 @@ export default function App() {
         previousScore={previousScore}
         teaseMode={teaseMode}
         onToggleTeaseMode={() => setTeaseMode(!teaseMode)}
+        isLiveCoachEnabled={isLiveCoachEnabled}
+        onToggleLiveCoach={() => setIsLiveCoachEnabled(!isLiveCoachEnabled)}
       />
 
       {/* Main Workspace: Slim Left Toolbar + Central Canvas + Right Side Panel */}
@@ -520,9 +590,7 @@ export default function App() {
           onShowHowToStart={() => {
             setIsUrgentInterventionOpen(false);
           }}
-          onDismissUrgentIntervention={() => {
-            setIsUrgentInterventionOpen(false);
-          }}
+          onDismissUrgentIntervention={handleDismissUrgentIntervention}
           isCoachWatching={isCoachWatching}
         />
 
@@ -530,6 +598,7 @@ export default function App() {
         <SidePanel
           structure={currentStructure}
           evaluationResult={evaluationResult}
+          evaluationError={evaluationError}
           activeHint={activeHint}
           liveNudgeMessage={liveNudgeMessage}
           onClearNudge={() => {

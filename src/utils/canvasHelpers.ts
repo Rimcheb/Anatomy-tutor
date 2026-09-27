@@ -24,6 +24,47 @@ export function convertBoxToPixels(
   return { top, left, width, height };
 }
 
+/**
+ * Downscales student canvas to maximum dimension for fast network transfer
+ * 768px for periodic live coaching checks, 1024px for faculty grading
+ */
+export function getDownscaledCanvasDataUrl(
+  canvas: HTMLCanvasElement | null,
+  maxDimension: number,
+  format: 'image/jpeg' | 'image/png' = 'image/jpeg',
+  quality = 0.82
+): string {
+  if (!canvas || canvas.width === 0 || canvas.height === 0) {
+    return '';
+  }
+
+  const { width, height } = canvas;
+  const maxSide = Math.max(width, height);
+
+  if (maxSide <= maxDimension) {
+    return canvas.toDataURL(format, quality);
+  }
+
+  const scale = maxDimension / maxSide;
+  const targetW = Math.round(width * scale);
+  const targetH = Math.round(height * scale);
+
+  const offscreen = document.createElement('canvas');
+  offscreen.width = targetW;
+  offscreen.height = targetH;
+  const ctx = offscreen.getContext('2d');
+  if (!ctx) {
+    return canvas.toDataURL(format, quality);
+  }
+
+  // Ensure solid white background before drawing
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, targetW, targetH);
+  ctx.drawImage(canvas, 0, 0, targetW, targetH);
+
+  return offscreen.toDataURL(format, quality);
+}
+
 // Draw shape preview or commit to canvas
 export function drawShape(
   ctx: CanvasRenderingContext2D,
